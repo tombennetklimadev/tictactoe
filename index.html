@@ -3,46 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TicTacToe Arena</title>
+    <title>TicTacToe | Arena</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #ffffff; --text: #000000; --grey: #f9f9f9; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, system-ui, sans-serif; }
-        
+        :root { --bg: #ffffff; --text: #000000; --sidebar-bg: #fcfcfc; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
-
-        /* Layout Struktur */
-        .app { display: flex; width: 100%; height: 100%; }
-        .main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
-        .sidebar { width: 260px; border-left: 1px solid #eee; background: var(--grey); padding: 40px 25px; display: flex; flex-direction: column; }
-
-        /* Branding & Text */
-        h1 { font-size: 3.5rem; font-weight: 900; text-transform: uppercase; line-height: 0.9; margin-bottom: 10px; letter-spacing: -0.05em; }
-        .subtitle { font-size: 0.7rem; color: #aaa; text-transform: uppercase; letter-spacing: 0.4em; font-weight: 600; margin-bottom: 50px; }
         
-        /* Formlemente */
-        .ui-group { width: 100%; max-width: 300px; display: flex; flex-direction: column; align-items: center; }
-        input { width: 100%; padding: 15px 0; border: none; border-bottom: 2px solid #000; font-size: 1.5rem; outline: none; text-align: center; text-transform: uppercase; margin-bottom: 30px; background: transparent; }
-        .btn { background: #000; color: #fff; border: none; padding: 20px 50px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.2em; cursor: pointer; transition: 0.2s; }
-        .btn:hover { background: #333; }
-
-        /* Spielfeld */
-        #board { display: grid; grid-template-columns: repeat(3, 100px); border: 2px solid #000; margin-top: 20px; }
-        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 3rem; font-weight: 900; cursor: pointer; }
-
-        /* Sidebar Info */
-        .label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: #bbb; margin-bottom: 15px; }
-        #user-list { list-style: none; }
-        #user-list li { font-size: 0.85rem; font-weight: 600; padding: 6px 0; text-transform: uppercase; }
-
+        /* Layout */
+        .app { display: flex; width: 100%; height: 100%; }
+        .main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .sidebar { width: 240px; border-left: 1px solid #000; background: var(--sidebar-bg); padding: 40px 20px; display: flex; flex-direction: column; overflow-y: auto; }
+        
+        /* UI Elements */
+        h1 { font-size: 2.5rem; font-weight: 900; text-transform: uppercase; margin-bottom: 2rem; letter-spacing: -0.05em; }
+        input { border: none; border-bottom: 2px solid #000; padding: 10px; font-size: 1.5rem; width: 250px; text-align: center; outline: none; margin-bottom: 2rem; text-transform: uppercase; background: transparent; }
+        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 15px 40px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; transition: all 0.2s; }
+        .btn:hover { background: #fff; color: #000; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        /* Board */
+        #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 0; border: 2px solid #000; margin-top: 20px; }
+        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 3rem; font-weight: 900; cursor: pointer; transition: background 0.2s; }
+        .cell:hover { background: #f5f5f5; }
+        .cell.disabled { cursor: not-allowed; }
+        
         .hidden { display: none !important; }
+        .label { font-size: 0.7rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; }
+        ul { list-style: none; }
+        li { padding: 5px 0; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
+        li.me { color: #0066cc; }
+        li.searching { color: #ff6600; }
+        li.playing { color: #00aa00; }
 
-        /* Handy Anpassung */
         @media (max-width: 800px) {
             .app { flex-direction: column; }
-            .sidebar { width: 100%; height: 160px; border-left: none; border-top: 1px solid #eee; order: 2; padding: 20px; }
+            .sidebar { width: 100%; height: 150px; border-left: none; border-top: 1px solid #000; order: 2; padding: 20px; }
             .main { order: 1; flex: 1; }
-            h1 { font-size: 2.5rem; }
         }
     </style>
 </head>
@@ -50,163 +47,325 @@
 
 <div class="app">
     <main class="main">
-        <div id="branding">
-            <h1>TICTACTOE</h1>
-            <p class="subtitle">Digital Arena</p>
+        <div id="branding"><h1>TICTACTOE</h1></div>
+
+        <div id="view-login">
+            <input type="text" id="username" placeholder="Enter Name" maxlength="10">
+            <br>
+            <button class="btn" onclick="login()">Enter Arena</button>
         </div>
 
-        <div id="view-login" class="ui-group">
-            <input type="text" id="username" placeholder="" maxlength="10">
-            <button class="btn" onclick="login()">Enter</button>
+        <div id="view-lounge" class="hidden">
+            <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight: 600;">Ready to play?</p>
+            <button class="btn" id="find-btn" onclick="search()">Find Match</button>
+            <button class="btn" onclick="cancelSearch()" id="cancel-btn" class="hidden" style="margin-top: 15px; background: #fff; color: #000;">Cancel</button>
         </div>
 
-        <div id="view-lounge" class="ui-group hidden">
-            <button class="btn" id="find-btn" onclick="startSearch()">Find Match</button>
-        </div>
-
-        <div id="view-game" class="ui-group hidden">
-            <p id="game-status" style="font-weight: 900; margin-bottom: 15px; text-transform: uppercase;"></p>
+        <div id="view-game" class="hidden">
+            <p id="game-info" style="font-size: 0.9rem; margin-bottom: 10px; color: #666;"></p>
+            <p id="game-status" style="font-weight: 900; margin-bottom: 15px; text-transform: uppercase; font-size: 1.5rem;"></p>
             <div id="board"></div>
-            <button class="btn" id="back-btn" onclick="goHome()" style="margin-top: 30px; display:none; padding: 15px 30px;">Back</button>
+            <button class="btn" id="back-btn" onclick="backToLobby()" style="margin-top: 30px; display: none;">Back to Lobby</button>
         </div>
     </main>
 
-    <aside class="sidebar hidden" id="sidebar">
-        <div class="label">Online</div>
-        <div style="font-size: 1.5rem; font-weight: 800; margin-bottom: 25px;" id="online-count">0</div>
-        <div class="label">Members</div>
+    <aside class="sidebar">
+        <p class="label">Online Players</p>
         <ul id="user-list"></ul>
     </aside>
 </div>
 
 <script>
-    // Konfiguration aus deinen Screenshots
-    const SB_URL = 'https://qzkpslpphypnintdnxji.supabase.co';
-    const SB_KEY = 'sb_publishable_ELLj2wdw6drr9c6gztrUrw_B7IVvdvc';
-    const sb = supabase.createClient(SB_URL, SB_KEY);
-
-    // Persistenz gegen Duplikate
-    let myId = localStorage.getItem('ttt_uid') || Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('ttt_uid', myId);
-    let myAlias = localStorage.getItem('ttt_alias') || "";
+    const SUPABASE_URL = 'https://qzkpslpphypnintdnxji.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3BzbHBwaHlwbmludGRueGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTU4MzA0MDAsImV4cCI6MjAxMTQwNjQwMH0.sb_publishable_key';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     
-    let lobby, gameChan, mySymbol = '', isMyTurn = false, board = Array(9).fill(null);
+    let myId = localStorage.getItem('tid') || 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('tid', myId);
+    let myAlias = localStorage.getItem('talias') || "";
+    let lobby, gameChan, mySymbol = '', opponentSymbol = '', isMyTurn = false, board = Array(9).fill(null);
+    let gameActive = false;
+    let opponentAlias = "";
 
-    // Routing Check
     const params = new URLSearchParams(window.location.search);
-    const gid = params.get('game');
+    const activeGameId = params.get('game');
 
-    // Start
-    window.onload = () => {
-        if(myAlias) login();
-    };
+    if (myAlias && !activeGameId) {
+        login();
+    }
 
     async function login() {
-        const input = document.getElementById('username').value.trim().toUpperCase();
-        if(input) myAlias = input;
-        if(!myAlias) return;
-        localStorage.setItem('ttt_alias', myAlias);
+        const input = document.getElementById('username').value.trim();
+        if (input) myAlias = input.toUpperCase();
+        if (!myAlias || myAlias.length < 2) {
+            alert('Please enter a name (at least 2 characters)');
+            return;
+        }
+        localStorage.setItem('talias', myAlias);
 
         document.getElementById('view-login').classList.add('hidden');
-        document.getElementById('sidebar').classList.remove('hidden');
-
-        lobby = sb.channel('lobby', { config: { presence: { key: myId } } });
+        
+        lobby = sb.channel('lobby', { 
+            config: { 
+                presence: { key: myId },
+                broadcast: { self: true }
+            } 
+        });
+        
         lobby.on('presence', { event: 'sync' }, () => {
-            const state = lobby.presenceState();
-            const list = document.getElementById('user-list');
-            const users = Object.values(state).flat();
-            list.innerHTML = '';
-            users.forEach(u => {
-                const li = document.createElement('li');
-                li.innerText = (u.id === myId ? '> ' : '') + u.alias;
-                list.appendChild(li);
-            });
-            document.getElementById('online-count').innerText = users.length;
-            if(!gid) checkAutoMatch(users);
-        })
-        .on('broadcast', { event: 'match_found' }, p => {
-            if(p.payload.players.includes(myId)) window.location.search = `?game=${p.payload.gid}`;
-        })
-        .subscribe(async s => {
-            if(s === 'SUBSCRIBED') {
-                await lobby.track({ alias: myAlias, id: myId, status: gid ? 'playing' : 'idle' });
-                if(gid) setupGame();
-                else document.getElementById('view-lounge').classList.remove('hidden');
+            updateUserList();
+        }).on('broadcast', { event: 'match' }, async (payload) => {
+            const data = payload.payload;
+            if (data.p1 === myId || data.p2 === myId) {
+                await lobby.track({ alias: myAlias, id: myId, status: 'playing' });
+                window.location.search = `?game=${data.gameId}`;
+            }
+        }).subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await lobby.track({ 
+                    alias: myAlias, 
+                    id: myId, 
+                    status: activeGameId ? 'playing' : 'idle',
+                    timestamp: Date.now()
+                });
+                
+                if (activeGameId) {
+                    initGame(activeGameId);
+                } else {
+                    document.getElementById('view-lounge').classList.remove('hidden');
+                }
             }
         });
     }
 
-    async function startSearch() {
-        document.getElementById('find-btn').innerText = "SEARCHING...";
-        await lobby.track({ alias: myAlias, id: myId, status: 'searching' });
-    }
-
-    function checkAutoMatch(users) {
-        const searchers = users.filter(u => u.status === 'searching').sort((a,b) => a.id.localeCompare(b.id));
-        if(searchers.length >= 2 && searchers[0].id === myId) {
-            const gameId = 'g_' + searchers[0].id + searchers[1].id;
-            lobby.send({ type: 'broadcast', event: 'match_found', payload: { gid: gameId, players: [searchers[0].id, searchers[1].id] } });
+    function updateUserList() {
+        const state = lobby.presenceState();
+        const list = document.getElementById('user-list');
+        list.innerHTML = '';
+        const all = Object.values(state).flat();
+        
+        all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+        
+        all.forEach(u => {
+            const li = document.createElement('li');
+            let displayText = u.alias || 'Anonymous';
+            
+            if (u.id === myId) {
+                li.className = 'me';
+                displayText += ' (YOU)';
+            }
+            
+            if (u.status === 'searching') {
+                displayText += ' 🔍';
+                li.className += ' searching';
+            } else if (u.status === 'playing') {
+                displayText += ' 🎮';
+                li.className += ' playing';
+            }
+            
+            li.innerText = displayText;
+            list.appendChild(li);
+        });
+        
+        if (!activeGameId && !gameActive) {
+            checkMatch(all);
         }
     }
 
-    function setupGame() {
+    async function search() {
+        document.getElementById('find-btn').classList.add('hidden');
+        document.getElementById('cancel-btn').classList.remove('hidden');
+        await lobby.track({ alias: myAlias, id: myId, status: 'searching', timestamp: Date.now() });
+    }
+
+    async function cancelSearch() {
+        document.getElementById('find-btn').classList.remove('hidden');
+        document.getElementById('cancel-btn').classList.add('hidden');
+        await lobby.track({ alias: myAlias, id: myId, status: 'idle', timestamp: Date.now() });
+    }
+
+    function checkMatch(users) {
+        const searchers = users.filter(u => u.status === 'searching' && u.id);
+        
+        if (searchers.length >= 2) {
+            const sorted = searchers.sort((a, b) => a.id.localeCompare(b.id));
+            const p1 = sorted[0];
+            const p2 = sorted[1];
+            
+            if (myId === p1.id || myId === p2.id) {
+                const gameId = 'g_' + p1.id + '_' + p2.id + '_' + Date.now();
+                lobby.send({
+                    type: 'broadcast',
+                    event: 'match',
+                    payload: { gameId, p1: p1.id, p2: p2.id }
+                });
+            }
+        }
+    }
+
+    async function initGame(gid) {
+        gameActive = true;
         document.getElementById('view-lounge').classList.add('hidden');
         document.getElementById('view-game').classList.remove('hidden');
         
-        mySymbol = (gid.indexOf(myId) < gid.indexOf('_', 3)) ? 'X' : 'O';
-        isMyTurn = (mySymbol === 'X');
+        const parts = gid.split('_');
+        const p1Id = parts[1];
+        const p2Id = parts[2];
         
-        updateBoard();
-        updateMsg();
-
-        gameChan = sb.channel(gid);
-        gameChan.on('broadcast', { event: 'move' }, p => {
-            board[p.payload.i] = p.payload.s;
+        if (myId === p1Id) {
+            mySymbol = 'X';
+            opponentSymbol = 'O';
             isMyTurn = true;
-            updateBoard();
-            updateMsg();
-        }).subscribe();
+        } else {
+            mySymbol = 'O';
+            opponentSymbol = 'X';
+            isMyTurn = false;
+        }
+        
+        board = Array(9).fill(null);
+        
+        gameChan = sb.channel(gid, {
+            config: {
+                broadcast: { self: false },
+                presence: { key: myId }
+            }
+        });
+        
+        gameChan.on('broadcast', { event: 'move' }, (payload) => {
+            const data = payload.payload;
+            if (data.player !== myId && board[data.index] === null) {
+                board[data.index] = data.symbol;
+                isMyTurn = true;
+                drawBoard();
+                updateStatus();
+            }
+        }).on('presence', { event: 'sync' }, () => {
+            const state = gameChan.presenceState();
+            const players = Object.values(state).flat();
+            const opponent = players.find(p => p.id !== myId);
+            if (opponent) {
+                opponentAlias = opponent.alias;
+                updateStatus();
+            }
+        }).subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                await gameChan.track({ id: myId, alias: myAlias });
+                drawBoard();
+                updateStatus();
+            }
+        });
     }
 
-    function updateBoard() {
-        const b = document.getElementById('board');
-        b.innerHTML = '';
-        board.forEach((c, i) => {
-            const d = document.createElement('div');
-            d.className = 'cell';
-            d.innerText = c || '';
-            d.onclick = () => {
-                if(!isMyTurn || board[i] || checkWin(true)) return;
-                board[i] = mySymbol;
-                isMyTurn = false;
-                updateBoard();
-                gameChan.send({ type: 'broadcast', event: 'move', payload: { i, s: mySymbol } });
-                updateMsg();
-            };
-            b.appendChild(d);
+    function drawBoard() {
+        const boardEl = document.getElementById('board');
+        boardEl.innerHTML = '';
+        
+        board.forEach((cell, index) => {
+            const cellEl = document.createElement('div');
+            cellEl.className = 'cell';
+            
+            if (cell) {
+                cellEl.innerText = cell;
+                cellEl.classList.add('disabled');
+            } else if (!isMyTurn || checkWin(true)) {
+                cellEl.classList.add('disabled');
+            }
+            
+            cellEl.onclick = () => makeMove(index);
+            boardEl.appendChild(cellEl);
         });
+        
         checkWin();
     }
 
-    function updateMsg() {
-        const el = document.getElementById('game-status');
-        if(!checkWin(true)) el.innerText = isMyTurn ? "Your Turn" : "Opponent Turn";
+    function makeMove(index) {
+        if (!isMyTurn || board[index] !== null || checkWin(true) || !gameActive) return;
+        
+        board[index] = mySymbol;
+        isMyTurn = false;
+        
+        gameChan.send({
+            type: 'broadcast',
+            event: 'move',
+            payload: { index, symbol: mySymbol, player: myId }
+        });
+        
+        drawBoard();
+        updateStatus();
+    }
+
+    function updateStatus() {
+        const statusEl = document.getElementById('game-status');
+        const infoEl = document.getElementById('game-info');
+        
+        infoEl.innerText = `You: ${mySymbol} | Opponent: ${opponentAlias || 'Waiting...'}`;
+        
+        if (!checkWin(true)) {
+            statusEl.innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
+            statusEl.style.color = isMyTurn ? '#00aa00' : '#ff6600';
+        }
     }
 
     function checkWin(silent = false) {
-        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-        const w = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
-        if(w || !board.includes(null)) {
-            if(!silent) {
-                document.getElementById('game-status').innerText = w ? (board[w[0]] === mySymbol ? "Victory" : "Defeat") : "Draw";
+        const wins = [
+            [0,1,2], [3,4,5], [6,7,8],
+            [0,3,6], [1,4,7], [2,5,8],
+            [0,4,8], [2,4,6]
+        ];
+        
+        for (let combo of wins) {
+            if (board[combo[0]] && 
+                board[combo[0]] === board[combo[1]] && 
+                board[combo[0]] === board[combo[2]]) {
+                
+                if (!silent) {
+                    const winner = board[combo[0]];
+                    const statusEl = document.getElementById('game-status');
+                    
+                    if (winner === mySymbol) {
+                        statusEl.innerText = "🎉 VICTORY!";
+                        statusEl.style.color = '#00aa00';
+                    } else {
+                        statusEl.innerText = "DEFEAT";
+                        statusEl.style.color = '#cc0000';
+                    }
+                    
+                    document.getElementById('back-btn').style.display = 'block';
+                    gameActive = false;
+                }
+                return true;
+            }
+        }
+        
+        if (!board.includes(null)) {
+            if (!silent) {
+                document.getElementById('game-status').innerText = "DRAW";
+                document.getElementById('game-status').style.color = '#666';
                 document.getElementById('back-btn').style.display = 'block';
+                gameActive = false;
             }
             return true;
         }
+        
         return false;
     }
 
-    function goHome() { window.location.search = ''; }
+    async function backToLobby() {
+        if (gameChan) {
+            await gameChan.unsubscribe();
+        }
+        
+        window.location.href = window.location.pathname;
+    }
+
+    window.addEventListener('beforeunload', () => {
+        if (lobby) {
+            lobby.untrack();
+        }
+        if (gameChan) {
+            gameChan.untrack();
+        }
+    });
 </script>
 </body>
 </html>
