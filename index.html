@@ -3,91 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Royal TicTacToe | Supabase Edition</title>
-    
+    <title>The Royal TicTacToe | Fixed Edition</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
-    
     <style>
-        :root {
-            --bg: #FAFAFA;
-            --text: #1A1A1A;
-            --sub-text: #888888;
-            --gold: #D4AF37;
-            --border: #E5E5E5;
-            --font-h: 'Playfair Display', serif;
-            --font-b: 'Lato', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: var(--font-b);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* --- Animations --- */
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
-
-        /* --- Layout --- */
+        :root { --bg: #FAFAFA; --text: #1A1A1A; --sub-text: #888888; --gold: #D4AF37; --border: #E5E5E5; --font-h: 'Playfair Display', serif; --font-b: 'Lato', sans-serif; }
+        body { background-color: var(--bg); color: var(--text); font-family: var(--font-b); margin: 0; display: flex; height: 100vh; overflow: hidden; }
         .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; position: relative; }
         .sidebar { width: 300px; background: #FFFFFF; border-left: 1px solid var(--border); padding: 30px; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.03); }
-
         h1 { font-family: var(--font-h); font-size: 3rem; margin: 0; font-weight: 400; }
         h2 { font-family: var(--font-h); font-size: 1.2rem; color: var(--sub-text); font-style: italic; margin-bottom: 30px; }
-
-        /* --- Inputs & Buttons --- */
-        input {
-            border: none; border-bottom: 1px solid var(--border); padding: 15px; font-family: var(--font-h);
-            font-size: 1.5rem; text-align: center; outline: none; background: transparent; width: 250px;
-        }
+        input { border: none; border-bottom: 1px solid var(--border); padding: 15px; font-family: var(--font-h); font-size: 1.5rem; text-align: center; outline: none; background: transparent; width: 250px; }
         input:focus { border-bottom: 1px solid var(--gold); }
-
-        .btn {
-            background: var(--text); color: #fff; border: 1px solid var(--text);
-            padding: 15px 40px; font-family: var(--font-b); text-transform: uppercase;
-            letter-spacing: 2px; cursor: pointer; margin-top: 20px; transition: 0.3s;
-        }
+        .btn { background: var(--text); color: #fff; border: 1px solid var(--text); padding: 15px 40px; font-family: var(--font-b); text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
         .btn:hover { background: #fff; color: var(--text); }
         .btn:disabled { opacity: 0.5; cursor: wait; }
-
-        /* --- User List --- */
         .sidebar h3 { font-family: var(--font-h); font-style: italic; border-bottom: 1px solid var(--gold); padding-bottom: 10px; margin-bottom: 20px; font-size: 1.1rem; }
         ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
         li { padding: 12px 0; border-bottom: 1px solid #f9f9f9; display: flex; align-items: center; font-size: 0.9rem; }
         .dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; margin-right: 12px; }
         .dot.me { background: var(--gold); }
         .dot.busy { background: #e74c3c; }
-
-        /* --- Game Board --- */
         #board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); margin: 40px 0; }
-        .cell {
-            width: 100px; height: 100px; display: flex; justify-content: center; align-items: center;
-            font-size: 3.5rem; font-family: var(--font-h); border: 1px solid var(--border); cursor: pointer;
-        }
+        .cell { width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; font-size: 3.5rem; font-family: var(--font-h); border: 1px solid var(--border); cursor: pointer; }
         .cell:nth-child(1), .cell:nth-child(2), .cell:nth-child(3) { border-top: none; }
         .cell:nth-child(7), .cell:nth-child(8), .cell:nth-child(9) { border-bottom: none; }
         .cell:nth-child(3n+1) { border-left: none; }
         .cell:nth-child(3n) { border-right: none; }
-        
         .hidden { display: none !important; }
-
-        @media(max-width: 700px) {
-            body { flex-direction: column; overflow-y: auto; }
-            .sidebar { width: 100%; height: 250px; border-left: none; border-top: 1px solid var(--border); order: 2; }
-            .main { min-height: 75vh; order: 1; }
-        }
+        @media(max-width: 700px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width: 100%; height: 250px; border-left: none; border-top: 1px solid var(--border); order: 2; } .main { min-height: 75vh; order: 1; } }
     </style>
 </head>
 <body>
-
     <div class="main">
         <div id="view-login" class="fade-in" style="text-align: center;">
             <h1>The Club</h1>
@@ -96,14 +43,12 @@
             <br>
             <button class="btn" onclick="enterLounge()">Enter Lounge</button>
         </div>
-
         <div id="view-lounge" class="hidden fade-in" style="text-align: center;">
             <h1>Lounge</h1>
             <h2 id="welcome-text">Welcome</h2>
             <button class="btn" id="find-btn" onclick="startSearching()">Find a Game</button>
             <p id="status-text" style="margin-top: 20px; color: var(--sub-text); font-style: italic; height: 20px;"></p>
         </div>
-
         <div id="view-game" class="hidden fade-in" style="text-align: center;">
             <div style="display:flex; justify-content:space-between; width:300px; font-family:var(--font-h); font-size:0.9rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
                 <span>YOU (<span id="my-symbol">-</span>)</span>
@@ -115,16 +60,13 @@
             <button class="btn" onclick="leaveGame()" style="margin-top:30px; background:transparent; color:#999; border-color:#eee; font-size:0.7rem;">Forfeit & Leave</button>
         </div>
     </div>
-
     <div class="sidebar">
         <h3>Present Members</h3>
-        <ul id="user-list">
-            <li style="color:#ccc;">Waiting for connection...</li>
-        </ul>
+        <ul id="user-list"><li style="color:#ccc;">Connecting...</li></ul>
     </div>
 
     <script>
-        // --- YOUR SUPABASE CONFIGURATION ---
+        // --- KONFIGURATION (Bleibt gleich) ---
         const SUPABASE_URL = 'https://qzkpslpphypnintdnxji.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_ELLj2wdw6drr9c6gztrUrw_B7IVvdvc'; 
 
@@ -138,26 +80,23 @@
         let mySymbol = 'X';
         let isMyTurn = false;
         let board = Array(9).fill(null);
+        let currentStatus = 'idle';
 
         async function enterLounge() {
             const val = document.getElementById('alias-input').value.trim();
-            if(val.length < 3) return alert("Alias must be at least 3 characters.");
+            if(val.length < 3) return alert("Alias too short");
             myAlias = val;
-
             showView('view-lounge');
             document.getElementById('welcome-text').innerText = "Welcome, " + myAlias;
 
-            lobbyChannel = sb.channel('public-lobby', {
-                config: { presence: { key: myId } }
-            });
-
+            lobbyChannel = sb.channel('public-lobby', { config: { presence: { key: myId } } });
             lobbyChannel
                 .on('presence', { event: 'sync' }, () => {
                     updateUserList();
-                    checkMatchmaking(); 
+                    handlePresenceLogic(); 
                 })
                 .on('broadcast', { event: 'match-start' }, ({ payload }) => {
-                    if (payload.p1 === myId || payload.p2 === myId) {
+                    if ((payload.p1 === myId || payload.p2 === myId) && currentStatus !== 'playing') {
                         startGame(payload);
                     }
                 })
@@ -172,78 +111,68 @@
             const state = lobbyChannel.presenceState();
             const list = document.getElementById('user-list');
             list.innerHTML = '';
-
-            const allUsers = [];
-            Object.values(state).forEach(users => {
-                users.forEach(u => allUsers.push(u));
-            });
-
-            allUsers.forEach(u => {
+            Object.values(state).flat().forEach(u => {
                 const li = document.createElement('li');
                 const isMe = u.id === myId;
                 const dotClass = isMe ? 'dot me' : (u.status === 'playing' ? 'dot busy' : 'dot');
-                const statusTxt = u.status === 'playing' ? ' (In Match)' : (u.status === 'searching' ? ' (Searching)' : '');
-                
-                li.innerHTML = `<div class="${dotClass}"></div> ${u.alias}${isMe ? ' (You)' : ''} <span style="font-size:0.7rem; color:#ccc; margin-left:5px;">${statusTxt}</span>`;
+                li.innerHTML = `<div class="${dotClass}"></div> ${u.alias}${isMe ? ' (You)' : ''} <span style="font-size:0.7rem; color:#ccc; margin-left:5px;">${u.status === 'playing' ? '(In Match)' : (u.status === 'searching' ? '(Searching)' : '')}</span>`;
                 list.appendChild(li);
             });
         }
 
         async function startSearching() {
+            currentStatus = 'searching';
             document.getElementById('find-btn').disabled = true;
             document.getElementById('find-btn').innerText = "Searching...";
-            document.getElementById('status-text').innerText = "Looking for an opponent...";
             await lobbyChannel.track({ alias: myAlias, status: 'searching', id: myId });
         }
 
-        function checkMatchmaking() {
+        function handlePresenceLogic() {
             const state = lobbyChannel.presenceState();
-            const searchingUsers = [];
-            Object.values(state).forEach(users => {
-                users.forEach(u => { if(u.status === 'searching') searchingUsers.push(u); });
-            });
-            
-            searchingUsers.sort((a, b) => a.id.localeCompare(b.id));
+            const searchingUsers = Object.values(state).flat()
+                .filter(u => u.status === 'searching')
+                .sort((a, b) => a.id.localeCompare(b.id));
 
+            // Wenn ich in der Liste der Suchenden bin und ein Partner da ist
             if (searchingUsers.length >= 2) {
                 const p1 = searchingUsers[0];
                 const p2 = searchingUsers[1];
+
+                // P1 ist der "Master" und sendet das Start-Signal
                 if (p1.id === myId) {
-                    const gameId = 'game_' + Date.now();
-                    lobbyChannel.send({
-                        type: 'broadcast',
-                        event: 'match-start',
-                        payload: { gameId, p1: p1.id, p2: p2.id, p1Name: p1.alias, p2Name: p2.alias }
-                    });
+                    const gameData = { gameId: 'game_' + Date.now(), p1: p1.id, p2: p2.id, p1Name: p1.alias, p2Name: p2.alias };
+                    lobbyChannel.send({ type: 'broadcast', event: 'match-start', payload: gameData });
+                    startGame(gameData);
                 }
             }
         }
 
-        function startGame(data) {
-            const gameId = data.gameId;
+        async function startGame(data) {
+            currentStatus = 'playing';
             const isP1 = myId === data.p1;
             mySymbol = isP1 ? 'X' : 'O';
-            isMyTurn = isP1; 
-            
+            isMyTurn = isP1;
+            board = Array(9).fill(null);
+
             document.getElementById('my-symbol').innerText = mySymbol;
             document.getElementById('opp-name').innerText = isP1 ? data.p2Name : data.p1Name;
-            
             showView('view-game');
             renderBoard();
             updateGameStatus();
 
-            lobbyChannel.track({ alias: myAlias, status: 'playing', id: myId });
+            await lobbyChannel.track({ alias: myAlias, status: 'playing', id: myId, currentGameId: data.gameId });
 
-            gameChannel = sb.channel(gameId);
+            if (gameChannel) sb.removeChannel(gameChannel);
+            gameChannel = sb.channel(data.gameId);
             gameChannel
-                .on('broadcast', { event: 'move' }, ({ payload }) => { handleRemoteMove(payload.index); })
-                .on('broadcast', { event: 'leave' }, () => { alert("Opponent left the match."); leaveGame(); })
+                .on('broadcast', { event: 'move' }, ({ payload }) => handleRemoteMove(payload))
+                .on('broadcast', { event: 'leave' }, () => { alert("Opponent left."); leaveGame(); })
                 .subscribe();
         }
 
-        function handleRemoteMove(index) {
-            if(board[index]) return;
-            board[index] = mySymbol === 'X' ? 'O' : 'X';
+        function handleRemoteMove(payload) {
+            if (board[payload.index] || payload.symbol === mySymbol) return;
+            board[payload.index] = payload.symbol;
             isMyTurn = true;
             renderBoard();
             checkWin();
@@ -251,11 +180,11 @@
         }
 
         function makeMove(index) {
-            if(!isMyTurn || board[index]) return;
+            if (!isMyTurn || board[index] || currentStatus !== 'playing') return;
             board[index] = mySymbol;
             isMyTurn = false;
             renderBoard();
-            gameChannel.send({ type: 'broadcast', event: 'move', payload: { index } });
+            gameChannel.send({ type: 'broadcast', event: 'move', payload: { index, symbol: mySymbol } });
             checkWin();
             updateGameStatus();
         }
@@ -263,48 +192,50 @@
         function renderBoard() {
             const el = document.getElementById('board');
             el.innerHTML = '';
-            board.forEach((cell, index) => {
+            board.forEach((cell, i) => {
                 const div = document.createElement('div');
                 div.className = 'cell';
-                div.onclick = () => makeMove(index);
-                if(cell === 'X') { div.innerHTML = 'X'; div.style.color = 'var(--text)'; }
-                if(cell === 'O') { div.innerHTML = 'O'; div.style.color = 'var(--gold)'; div.style.fontStyle = 'italic'; }
+                div.onclick = () => makeMove(i);
+                if (cell) {
+                    div.innerHTML = cell;
+                    div.style.color = cell === 'X' ? 'var(--text)' : 'var(--gold)';
+                    if (cell === 'O') div.style.fontStyle = 'italic';
+                }
                 el.appendChild(div);
             });
         }
 
         function updateGameStatus() {
             const el = document.getElementById('game-msg');
-            if(checkWin(true)) return;
+            if (checkWin(true)) return;
             el.innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
             el.style.color = isMyTurn ? "var(--text)" : "var(--sub-text)";
         }
 
         function checkWin(silent = false) {
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            const winner = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
-            
-            if (winner && !silent) {
-                const msg = board[winner[0]] === mySymbol ? "Victory" : "Defeat";
-                document.getElementById('game-msg').innerText = msg;
-                document.getElementById('game-msg').style.color = "var(--gold)";
-                isMyTurn = false; 
+            const w = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
+            if (w) {
+                if (!silent) {
+                    document.getElementById('game-msg').innerText = board[w[0]] === mySymbol ? "Victory" : "Defeat";
+                    isMyTurn = false;
+                }
                 return true;
             }
-            if (!board.includes(null) && !winner) {
-                if(!silent) document.getElementById('game-msg').innerText = "Draw";
+            if (!board.includes(null)) {
+                if (!silent) document.getElementById('game-msg').innerText = "Draw";
                 return true;
             }
-            return !!winner;
+            return false;
         }
 
         async function leaveGame() {
-            if(gameChannel) { await gameChannel.send({ type: 'broadcast', event: 'leave' }); sb.removeChannel(gameChannel); }
+            if (gameChannel) await gameChannel.send({ type: 'broadcast', event: 'leave' });
+            currentStatus = 'idle';
             board = Array(9).fill(null);
-            lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId });
             document.getElementById('find-btn').disabled = false;
             document.getElementById('find-btn').innerText = "Find a Game";
-            document.getElementById('status-text').innerText = "";
+            await lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId });
             showView('view-lounge');
         }
 
