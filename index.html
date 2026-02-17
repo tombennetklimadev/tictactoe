@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Royal TicTacToe</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root { --bg: #FAFAFA; --text: #1A1A1A; --gold: #D4AF37; --font-h: 'Playfair Display', serif; --font-b: 'Lato', sans-serif; }
+        body { background: var(--bg); color: var(--text); font-family: var(--font-b); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; position: relative; }
+        .sidebar { width: 300px; background: #FFF; border-left: 1px solid #E5E5E5; padding: 30px; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.03); }
+        h1 { font-family: var(--font-h); font-size: 3rem; margin: 0; }
+        h2 { font-family: var(--font-h); font-size: 1.2rem; color: #888; font-style: italic; margin-bottom: 30px; }
+        input { border: none; border-bottom: 1px solid #ddd; padding: 15px; font-size: 1.5rem; text-align: center; outline: none; background: transparent; width: 250px; font-family: var(--font-h); }
+        input:focus { border-bottom: 1px solid var(--gold); }
+        .btn { background: #111; color: #fff; border: 1px solid #111; padding: 15px 40px; font-family: var(--font-b); text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        .btn:hover { background: #fff; color: #111; }
+        .btn:disabled { opacity: 0.5; cursor: wait; }
+        ul { list-style: none; padding: 0; margin-top: 20px; overflow-y: auto; }
+        li { padding: 10px 0; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; font-size: 0.9rem; }
+        .dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; margin-right: 10px; }
+        .dot.me { background: var(--gold); }
+        #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 0; margin: 40px 0; border: 1px solid #eee; }
+        .cell { width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; font-size: 3rem; font-family: var(--font-h); border: 1px solid #eee; cursor: pointer; }
+        .cell:hover { background: #fdfdfd; }
+        .hidden { display: none !important; }
+        .fade-in { animation: fade 0.8s ease forwards; opacity: 0; }
+        @keyframes fade { to { opacity: 1; } }
+        @media(max-width: 700px) {
+            body { flex-direction: column; overflow-y: auto; }
+            .sidebar { width: 100%; height: 200px; border-left: none; border-top: 1px solid #eee; order: 2; box-sizing: border-box; }
+            .main { min-height: 80vh; order: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="main">
+        <div id="view-login" class="fade-in" style="text-align: center;">
+            <h1>The Club</h1>
+            <h2>Members Only</h2>
+            <input type="text" id="alias-input" placeholder="Enter Alias" maxlength="12">
+            <br>
+            <button class="btn" onclick="login()">Enter Lounge</button>
+        </div>
+
+        <div id="view-lounge" class="hidden fade-in" style="text-align: center;">
+            <h1>Lounge</h1>
+            <h2 id="welcome-text">Welcome</h2>
+            <button class="btn" id="find-btn" onclick="joinQueue()">Find a Game</button>
+            <p id="queue-status" style="margin-top: 20px; color: #888; font-style: italic; height: 20px;"></p>
+        </div>
+
+        <div id="view-game" class="hidden fade-in" style="text-align: center;">
+            <div style="display:flex; justify-content:space-between; width:300px; font-family:var(--font-h);">
+                <span>YOU (<span id="my-symbol">-</span>)</span>
+                <span>VS</span>
+                <span id="opp-name">OPPONENT</span>
+            </div>
+            <div id="board"></div>
+            <div id="game-msg" style="font-family:var(--font-h); text-transform:uppercase; letter-spacing:1px;">Connecting...</div>
+            <button class="btn" onclick="leaveGame()" style="margin-top:20px; background:#fff; color:#999; border-color:#eee; font-size:0.7rem;">Forfeit Match</button>
+        </div>
+    </div>
+
+    <div class="sidebar">
+        <div style="font-family:var(--font-h); font-style:italic; border-bottom:1px solid var(--gold); padding-bottom:10px;">Present Members</div>
+        <ul id="user-list"><li style="color:#ccc;">Checking network...</li></ul>
+    </div>
+
+    <script>
+        // --- KONFIGURATION (Bereinigt) ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZr2LcnMmV3JYDNtLrbh3Yay80RrLAxIc",
+            authDomain: "tic-tac-toe-85b31.firebaseapp.com",
+            projectId: "tic-tac-toe-85b31",
+            storageBucket: "tic-tac-toe-85b31.firebasestorage.app",
+            messagingSenderId: "825991748285",
+            appId: "1:825991748285:web:87762cc215b8baf442b5d4",
+            measurementId: "G-LQC10Z0GFK",
+            // Deine URL (sichergestellt ohne Slash am Ende und ohne Leerzeichen)
+            databaseURL: "https://tic-tac-toe-85b31-default-rtdb.europe-west1.firebasedatabase.app" 
+        };
+        
+        // Initialisierung mit Fehlerprüfung
+        try {
+            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        } catch(e) {
+            alert("Fehler beim Starten von Firebase: " + e.message);
+        }
+        
+        const db = firebase.database();
+
+        let myId = 'user_' + Math.random().toString(36).substr(2, 9);
+        let myAlias = "";
+        let currentGameId = null;
+
+        function login() {
+            const val = document.getElementById('alias-input').value.trim();
+            if(val.length < 3) return alert("Alias too short.");
+            myAlias = val;
+
+            const userRef = db.ref('users/' + myId);
+            
+            // Speichern mit Fehler-Anzeige
+            userRef.set({
+                alias: myAlias,
+                state: 'idle',
+                last_active: Date.now()
+            }).catch(error => {
+                alert("Verbindungsfehler: " + error.message + "\nBitte prüfe deine Internetverbindung oder Adblocker.");
+            });
+
+            userRef.onDisconnect().remove();
+
+            showView('view-lounge');
+            document.getElementById('welcome-text').innerText = "Welcome, " + myAlias;
+            
+            monitorUsers();
+            monitorMyState();
+        }
+
+        function monitorUsers() {
+            const list = document.getElementById('user-list');
+            list.innerHTML = '<li style="color:#888;">Connecting to server...</li>';
+
+            db.ref('users').on('value', (snapshot) => {
+                list.innerHTML = ''; // Liste leeren
+                const users = snapshot.val() || {};
+                const keys = Object.keys(users);
+
+                if (keys.length === 0) {
+                    list.innerHTML = '<li style="color:#ccc;">No active users found.</li>';
+                    return;
+                }
+                
+                keys.forEach(key => {
+                    const u = users[key];
+                    const li = document.createElement('li');
+                    const dotClass = key === myId ? 'dot me' : 'dot';
+                    const suffix = key === myId ? ' (You)' : '';
+                    const statusText = u.state === 'playing' ? ' (In Match)' : '';
+                    
+                    li.innerHTML = `<div class="${dotClass}"></div> ${u.alias}${suffix} <span style="font-size:0.7rem; color:#ccc; margin-left:5px;">${statusText}</span>`;
+                    list.appendChild(li);
+                });
+            }, (error) => {
+                // Wenn dies passiert, stimmt etwas mit den Regeln oder der Verbindung nicht
+                list.innerHTML = '<li style="color:red;">Connection Failed!</li>';
+                alert("Datenbank-Zugriff verweigert: " + error.message);
+            });
+        }
+
+        function joinQueue() {
+            document.getElementById('find-btn').disabled = true;
+            document.getElementById('find-btn').innerText = "Searching...";
+            const queueRef = db.ref('queue');
+            
+            queueRef.transaction((queue) => {
+                if (queue === null) return { [myId]: { alias: myAlias } };
+                else return queue;
+            }, (error, committed, snapshot) => {
+                if (error) {
+                    alert("Queue Error: " + error.message);
+                    return;
+                }
+                const queueData = snapshot.val() || {};
+                const otherIds = Object.keys(queueData).filter(id => id !== myId);
+
+                if (otherIds.length > 0) {
+                    createMatch(otherIds[0]);
+                } else {
+                    document.getElementById('queue-status').innerText = "1 person searching (You)...";
+                    db.ref('queue').on('value', snap => {
+                        const count = snap.numChildren();
+                        if(count > 0) document.getElementById('queue-status').innerText = `${count} person(s) searching...`;
+                    });
+                }
+            });
+        }
+
+        function createMatch(opponentId) {
+            const gameId = 'game_' + Date.now();
+            db.ref('queue').remove();
+            db.ref('games/' + gameId).set({
+                host: opponentId,
+                guest: myId,
+                board: [0,0,0,0,0,0,0,0,0],
+                turn: opponentId
+            });
+            db.ref('users/' + opponentId).update({ state: 'playing', gameId: gameId });
+            db.ref('users/' + myId).update({ state: 'playing', gameId: gameId });
+        }
+
+        function monitorMyState() {
+            db.ref('users/' + myId).on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.gameId && data.state === 'playing') {
+                    if (currentGameId !== data.gameId) startGame(data.gameId);
+                }
+            });
+        }
+
+        function startGame(gameId) {
+            currentGameId = gameId;
+            window.location.hash = "/game/" + gameId;
+            showView('view-game');
+            
+            db.ref('games/' + gameId).on('value', (snap) => {
+                const game = snap.val();
+                if(!game) return; 
+                
+                const isHost = game.host === myId;
+                const mySymbol = isHost ? 'X' : 'O';
+                document.getElementById('my-symbol').innerText = mySymbol;
+                
+                const oppId = isHost ? game.guest : game.host;
+                db.ref('users/' + oppId + '/alias').once('value').then(s => {
+                    document.getElementById('opp-name').innerText = s.val() || "Opponent";
+                });
+
+                renderBoard(game.board);
+                
+                const isMyTurn = game.turn === myId;
+                const statusEl = document.getElementById('game-msg');
+                
+                if (checkWinner(game.board)) {
+                    statusEl.innerText = "Game Over";
+                } else {
+                    statusEl.innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
+                    statusEl.style.color = isMyTurn ? "#000" : "#ccc";
+                }
+            });
+        }
+
+        function renderBoard(board) {
+            const el = document.getElementById('board');
+            el.innerHTML = '';
+            board.forEach((cell, index) => {
+                const div = document.createElement('div');
+                div.className = 'cell';
+                div.onclick = () => makeMove(index);
+                if(cell === 1) { div.innerHTML = 'X'; div.style.color = '#111'; }
+                if(cell === 2) { div.innerHTML = 'O'; div.style.color = '#D4AF37'; }
+                el.appendChild(div);
+            });
+        }
+
+        function makeMove(index) {
+            if(!currentGameId) return;
+            db.ref('games/' + currentGameId).transaction((game) => {
+                if (!game || game.turn !== myId || game.board[index] !== 0) return;
+                game.board[index] = (game.host === myId) ? 1 : 2;
+                game.turn = (game.host === myId) ? game.guest : game.host;
+                return game;
+            });
+        }
+
+        function checkWinner(board) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.some(c => board[c[0]] !== 0 && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
+        }
+
+        function leaveGame() {
+            if(currentGameId) {
+                db.ref('games/' + currentGameId).remove();
+                db.ref('users/' + myId).update({ state: 'idle', gameId: null });
+                window.location.hash = "";
+                location.reload();
+            }
+        }
+
+        function showView(id) {
+            ['view-login', 'view-lounge', 'view-game'].forEach(v => document.getElementById(v).classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
