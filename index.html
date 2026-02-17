@@ -3,39 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Royal TicTacToe</title>
+    <title>The Royal TicTacToe | Supabase Edition</title>
     
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
     <style>
-        :root { --bg: #FAFAFA; --text: #1A1A1A; --gold: #D4AF37; --font-h: 'Playfair Display', serif; --font-b: 'Lato', sans-serif; }
-        body { background: var(--bg); color: var(--text); font-family: var(--font-b); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+        :root {
+            --bg: #FAFAFA;
+            --text: #1A1A1A;
+            --sub-text: #888888;
+            --gold: #D4AF37;
+            --border: #E5E5E5;
+            --font-h: 'Playfair Display', serif;
+            --font-b: 'Lato', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font-b);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+
+        /* --- Layout --- */
         .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; position: relative; }
-        .sidebar { width: 300px; background: #FFF; border-left: 1px solid #E5E5E5; padding: 30px; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.03); }
-        h1 { font-family: var(--font-h); font-size: 3rem; margin: 0; }
-        h2 { font-family: var(--font-h); font-size: 1.2rem; color: #888; font-style: italic; margin-bottom: 30px; }
-        input { border: none; border-bottom: 1px solid #ddd; padding: 15px; font-size: 1.5rem; text-align: center; outline: none; background: transparent; width: 250px; font-family: var(--font-h); }
+        .sidebar { width: 300px; background: #FFFFFF; border-left: 1px solid var(--border); padding: 30px; display: flex; flex-direction: column; box-shadow: -5px 0 20px rgba(0,0,0,0.03); }
+
+        h1 { font-family: var(--font-h); font-size: 3rem; margin: 0; font-weight: 400; }
+        h2 { font-family: var(--font-h); font-size: 1.2rem; color: var(--sub-text); font-style: italic; margin-bottom: 30px; }
+
+        /* --- Inputs & Buttons --- */
+        input {
+            border: none; border-bottom: 1px solid var(--border); padding: 15px; font-family: var(--font-h);
+            font-size: 1.5rem; text-align: center; outline: none; background: transparent; width: 250px;
+        }
         input:focus { border-bottom: 1px solid var(--gold); }
-        .btn { background: #111; color: #fff; border: 1px solid #111; padding: 15px 40px; font-family: var(--font-b); text-transform: uppercase; letter-spacing: 2px; cursor: pointer; margin-top: 20px; transition: 0.3s; }
-        .btn:hover { background: #fff; color: #111; }
+
+        .btn {
+            background: var(--text); color: #fff; border: 1px solid var(--text);
+            padding: 15px 40px; font-family: var(--font-b); text-transform: uppercase;
+            letter-spacing: 2px; cursor: pointer; margin-top: 20px; transition: 0.3s;
+        }
+        .btn:hover { background: #fff; color: var(--text); }
         .btn:disabled { opacity: 0.5; cursor: wait; }
-        ul { list-style: none; padding: 0; margin-top: 20px; overflow-y: auto; }
-        li { padding: 10px 0; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; font-size: 0.9rem; }
-        .dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; margin-right: 10px; }
+
+        /* --- User List --- */
+        .sidebar h3 { font-family: var(--font-h); font-style: italic; border-bottom: 1px solid var(--gold); padding-bottom: 10px; margin-bottom: 20px; font-size: 1.1rem; }
+        ul { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex: 1; }
+        li { padding: 12px 0; border-bottom: 1px solid #f9f9f9; display: flex; align-items: center; font-size: 0.9rem; }
+        .dot { width: 8px; height: 8px; background: #2ecc71; border-radius: 50%; margin-right: 12px; }
         .dot.me { background: var(--gold); }
-        #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 0; margin: 40px 0; border: 1px solid #eee; }
-        .cell { width: 100px; height: 100px; display: flex; justify-content: center; align-items: center; font-size: 3rem; font-family: var(--font-h); border: 1px solid #eee; cursor: pointer; }
-        .cell:hover { background: #fdfdfd; }
+        .dot.busy { background: #e74c3c; }
+
+        /* --- Game Board --- */
+        #board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); margin: 40px 0; }
+        .cell {
+            width: 100px; height: 100px; display: flex; justify-content: center; align-items: center;
+            font-size: 3.5rem; font-family: var(--font-h); border: 1px solid var(--border); cursor: pointer;
+        }
+        .cell:nth-child(1), .cell:nth-child(2), .cell:nth-child(3) { border-top: none; }
+        .cell:nth-child(7), .cell:nth-child(8), .cell:nth-child(9) { border-bottom: none; }
+        .cell:nth-child(3n+1) { border-left: none; }
+        .cell:nth-child(3n) { border-right: none; }
+        
         .hidden { display: none !important; }
-        .fade-in { animation: fade 0.8s ease forwards; opacity: 0; }
-        @keyframes fade { to { opacity: 1; } }
+
         @media(max-width: 700px) {
             body { flex-direction: column; overflow-y: auto; }
-            .sidebar { width: 100%; height: 200px; border-left: none; border-top: 1px solid #eee; order: 2; box-sizing: border-box; }
-            .main { min-height: 80vh; order: 1; }
+            .sidebar { width: 100%; height: 250px; border-left: none; border-top: 1px solid var(--border); order: 2; }
+            .main { min-height: 75vh; order: 1; }
         }
     </style>
 </head>
@@ -45,235 +92,220 @@
         <div id="view-login" class="fade-in" style="text-align: center;">
             <h1>The Club</h1>
             <h2>Members Only</h2>
-            <input type="text" id="alias-input" placeholder="Enter Alias" maxlength="12">
+            <input type="text" id="alias-input" placeholder="Your Alias" maxlength="12">
             <br>
-            <button class="btn" onclick="login()">Enter Lounge</button>
+            <button class="btn" onclick="enterLounge()">Enter Lounge</button>
         </div>
 
         <div id="view-lounge" class="hidden fade-in" style="text-align: center;">
             <h1>Lounge</h1>
             <h2 id="welcome-text">Welcome</h2>
-            <button class="btn" id="find-btn" onclick="joinQueue()">Find a Game</button>
-            <p id="queue-status" style="margin-top: 20px; color: #888; font-style: italic; height: 20px;"></p>
+            <button class="btn" id="find-btn" onclick="startSearching()">Find a Game</button>
+            <p id="status-text" style="margin-top: 20px; color: var(--sub-text); font-style: italic; height: 20px;"></p>
         </div>
 
         <div id="view-game" class="hidden fade-in" style="text-align: center;">
-            <div style="display:flex; justify-content:space-between; width:300px; font-family:var(--font-h);">
+            <div style="display:flex; justify-content:space-between; width:300px; font-family:var(--font-h); font-size:0.9rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">
                 <span>YOU (<span id="my-symbol">-</span>)</span>
                 <span>VS</span>
                 <span id="opp-name">OPPONENT</span>
             </div>
             <div id="board"></div>
-            <div id="game-msg" style="font-family:var(--font-h); text-transform:uppercase; letter-spacing:1px;">Connecting...</div>
-            <button class="btn" onclick="leaveGame()" style="margin-top:20px; background:#fff; color:#999; border-color:#eee; font-size:0.7rem;">Forfeit Match</button>
+            <div id="game-msg" style="font-family:var(--font-h); font-size:1rem; text-transform:uppercase; letter-spacing:2px; margin-top:20px;">Match Started</div>
+            <button class="btn" onclick="leaveGame()" style="margin-top:30px; background:transparent; color:#999; border-color:#eee; font-size:0.7rem;">Forfeit & Leave</button>
         </div>
     </div>
 
     <div class="sidebar">
-        <div style="font-family:var(--font-h); font-style:italic; border-bottom:1px solid var(--gold); padding-bottom:10px;">Present Members</div>
-        <ul id="user-list"><li style="color:#ccc;">Checking network...</li></ul>
+        <h3>Present Members</h3>
+        <ul id="user-list">
+            <li style="color:#ccc;">Waiting for connection...</li>
+        </ul>
     </div>
 
     <script>
-        // --- KONFIGURATION (Bereinigt) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyBZr2LcnMmV3JYDNtLrbh3Yay80RrLAxIc",
-            authDomain: "tic-tac-toe-85b31.firebaseapp.com",
-            projectId: "tic-tac-toe-85b31",
-            storageBucket: "tic-tac-toe-85b31.firebasestorage.app",
-            messagingSenderId: "825991748285",
-            appId: "1:825991748285:web:87762cc215b8baf442b5d4",
-            measurementId: "G-LQC10Z0GFK",
-            // Deine URL (sichergestellt ohne Slash am Ende und ohne Leerzeichen)
-            databaseURL: "https://tic-tac-toe-85b31-default-rtdb.europe-west1.firebasedatabase.app" 
-        };
-        
-        // Initialisierung mit Fehlerprüfung
-        try {
-            if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-        } catch(e) {
-            alert("Fehler beim Starten von Firebase: " + e.message);
-        }
-        
-        const db = firebase.database();
+        // --- YOUR SUPABASE CONFIGURATION ---
+        const SUPABASE_URL = 'https://qzkpslpphypnintdnxji.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_ELLj2wdw6drr9c6gztrUrw_B7IVvdvc'; 
 
-        let myId = 'user_' + Math.random().toString(36).substr(2, 9);
+        const { createClient } = supabase;
+        const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let myId = Math.random().toString(36).substr(2, 9);
         let myAlias = "";
-        let currentGameId = null;
+        let lobbyChannel = null;
+        let gameChannel = null;
+        let mySymbol = 'X';
+        let isMyTurn = false;
+        let board = Array(9).fill(null);
 
-        function login() {
+        async function enterLounge() {
             const val = document.getElementById('alias-input').value.trim();
-            if(val.length < 3) return alert("Alias too short.");
+            if(val.length < 3) return alert("Alias must be at least 3 characters.");
             myAlias = val;
-
-            const userRef = db.ref('users/' + myId);
-            
-            // Speichern mit Fehler-Anzeige
-            userRef.set({
-                alias: myAlias,
-                state: 'idle',
-                last_active: Date.now()
-            }).catch(error => {
-                alert("Verbindungsfehler: " + error.message + "\nBitte prüfe deine Internetverbindung oder Adblocker.");
-            });
-
-            userRef.onDisconnect().remove();
 
             showView('view-lounge');
             document.getElementById('welcome-text').innerText = "Welcome, " + myAlias;
-            
-            monitorUsers();
-            monitorMyState();
+
+            lobbyChannel = sb.channel('public-lobby', {
+                config: { presence: { key: myId } }
+            });
+
+            lobbyChannel
+                .on('presence', { event: 'sync' }, () => {
+                    updateUserList();
+                    checkMatchmaking(); 
+                })
+                .on('broadcast', { event: 'match-start' }, ({ payload }) => {
+                    if (payload.p1 === myId || payload.p2 === myId) {
+                        startGame(payload);
+                    }
+                })
+                .subscribe(async (status) => {
+                    if (status === 'SUBSCRIBED') {
+                        await lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId });
+                    }
+                });
         }
 
-        function monitorUsers() {
+        function updateUserList() {
+            const state = lobbyChannel.presenceState();
             const list = document.getElementById('user-list');
-            list.innerHTML = '<li style="color:#888;">Connecting to server...</li>';
+            list.innerHTML = '';
 
-            db.ref('users').on('value', (snapshot) => {
-                list.innerHTML = ''; // Liste leeren
-                const users = snapshot.val() || {};
-                const keys = Object.keys(users);
+            const allUsers = [];
+            Object.values(state).forEach(users => {
+                users.forEach(u => allUsers.push(u));
+            });
 
-                if (keys.length === 0) {
-                    list.innerHTML = '<li style="color:#ccc;">No active users found.</li>';
-                    return;
-                }
+            allUsers.forEach(u => {
+                const li = document.createElement('li');
+                const isMe = u.id === myId;
+                const dotClass = isMe ? 'dot me' : (u.status === 'playing' ? 'dot busy' : 'dot');
+                const statusTxt = u.status === 'playing' ? ' (In Match)' : (u.status === 'searching' ? ' (Searching)' : '');
                 
-                keys.forEach(key => {
-                    const u = users[key];
-                    const li = document.createElement('li');
-                    const dotClass = key === myId ? 'dot me' : 'dot';
-                    const suffix = key === myId ? ' (You)' : '';
-                    const statusText = u.state === 'playing' ? ' (In Match)' : '';
-                    
-                    li.innerHTML = `<div class="${dotClass}"></div> ${u.alias}${suffix} <span style="font-size:0.7rem; color:#ccc; margin-left:5px;">${statusText}</span>`;
-                    list.appendChild(li);
-                });
-            }, (error) => {
-                // Wenn dies passiert, stimmt etwas mit den Regeln oder der Verbindung nicht
-                list.innerHTML = '<li style="color:red;">Connection Failed!</li>';
-                alert("Datenbank-Zugriff verweigert: " + error.message);
+                li.innerHTML = `<div class="${dotClass}"></div> ${u.alias}${isMe ? ' (You)' : ''} <span style="font-size:0.7rem; color:#ccc; margin-left:5px;">${statusTxt}</span>`;
+                list.appendChild(li);
             });
         }
 
-        function joinQueue() {
+        async function startSearching() {
             document.getElementById('find-btn').disabled = true;
             document.getElementById('find-btn').innerText = "Searching...";
-            const queueRef = db.ref('queue');
-            
-            queueRef.transaction((queue) => {
-                if (queue === null) return { [myId]: { alias: myAlias } };
-                else return queue;
-            }, (error, committed, snapshot) => {
-                if (error) {
-                    alert("Queue Error: " + error.message);
-                    return;
-                }
-                const queueData = snapshot.val() || {};
-                const otherIds = Object.keys(queueData).filter(id => id !== myId);
+            document.getElementById('status-text').innerText = "Looking for an opponent...";
+            await lobbyChannel.track({ alias: myAlias, status: 'searching', id: myId });
+        }
 
-                if (otherIds.length > 0) {
-                    createMatch(otherIds[0]);
-                } else {
-                    document.getElementById('queue-status').innerText = "1 person searching (You)...";
-                    db.ref('queue').on('value', snap => {
-                        const count = snap.numChildren();
-                        if(count > 0) document.getElementById('queue-status').innerText = `${count} person(s) searching...`;
+        function checkMatchmaking() {
+            const state = lobbyChannel.presenceState();
+            const searchingUsers = [];
+            Object.values(state).forEach(users => {
+                users.forEach(u => { if(u.status === 'searching') searchingUsers.push(u); });
+            });
+            
+            searchingUsers.sort((a, b) => a.id.localeCompare(b.id));
+
+            if (searchingUsers.length >= 2) {
+                const p1 = searchingUsers[0];
+                const p2 = searchingUsers[1];
+                if (p1.id === myId) {
+                    const gameId = 'game_' + Date.now();
+                    lobbyChannel.send({
+                        type: 'broadcast',
+                        event: 'match-start',
+                        payload: { gameId, p1: p1.id, p2: p2.id, p1Name: p1.alias, p2Name: p2.alias }
                     });
                 }
-            });
+            }
         }
 
-        function createMatch(opponentId) {
-            const gameId = 'game_' + Date.now();
-            db.ref('queue').remove();
-            db.ref('games/' + gameId).set({
-                host: opponentId,
-                guest: myId,
-                board: [0,0,0,0,0,0,0,0,0],
-                turn: opponentId
-            });
-            db.ref('users/' + opponentId).update({ state: 'playing', gameId: gameId });
-            db.ref('users/' + myId).update({ state: 'playing', gameId: gameId });
-        }
-
-        function monitorMyState() {
-            db.ref('users/' + myId).on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data && data.gameId && data.state === 'playing') {
-                    if (currentGameId !== data.gameId) startGame(data.gameId);
-                }
-            });
-        }
-
-        function startGame(gameId) {
-            currentGameId = gameId;
-            window.location.hash = "/game/" + gameId;
-            showView('view-game');
+        function startGame(data) {
+            const gameId = data.gameId;
+            const isP1 = myId === data.p1;
+            mySymbol = isP1 ? 'X' : 'O';
+            isMyTurn = isP1; 
             
-            db.ref('games/' + gameId).on('value', (snap) => {
-                const game = snap.val();
-                if(!game) return; 
-                
-                const isHost = game.host === myId;
-                const mySymbol = isHost ? 'X' : 'O';
-                document.getElementById('my-symbol').innerText = mySymbol;
-                
-                const oppId = isHost ? game.guest : game.host;
-                db.ref('users/' + oppId + '/alias').once('value').then(s => {
-                    document.getElementById('opp-name').innerText = s.val() || "Opponent";
-                });
+            document.getElementById('my-symbol').innerText = mySymbol;
+            document.getElementById('opp-name').innerText = isP1 ? data.p2Name : data.p1Name;
+            
+            showView('view-game');
+            renderBoard();
+            updateGameStatus();
 
-                renderBoard(game.board);
-                
-                const isMyTurn = game.turn === myId;
-                const statusEl = document.getElementById('game-msg');
-                
-                if (checkWinner(game.board)) {
-                    statusEl.innerText = "Game Over";
-                } else {
-                    statusEl.innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
-                    statusEl.style.color = isMyTurn ? "#000" : "#ccc";
-                }
-            });
+            lobbyChannel.track({ alias: myAlias, status: 'playing', id: myId });
+
+            gameChannel = sb.channel(gameId);
+            gameChannel
+                .on('broadcast', { event: 'move' }, ({ payload }) => { handleRemoteMove(payload.index); })
+                .on('broadcast', { event: 'leave' }, () => { alert("Opponent left the match."); leaveGame(); })
+                .subscribe();
         }
 
-        function renderBoard(board) {
+        function handleRemoteMove(index) {
+            if(board[index]) return;
+            board[index] = mySymbol === 'X' ? 'O' : 'X';
+            isMyTurn = true;
+            renderBoard();
+            checkWin();
+            updateGameStatus();
+        }
+
+        function makeMove(index) {
+            if(!isMyTurn || board[index]) return;
+            board[index] = mySymbol;
+            isMyTurn = false;
+            renderBoard();
+            gameChannel.send({ type: 'broadcast', event: 'move', payload: { index } });
+            checkWin();
+            updateGameStatus();
+        }
+
+        function renderBoard() {
             const el = document.getElementById('board');
             el.innerHTML = '';
             board.forEach((cell, index) => {
                 const div = document.createElement('div');
                 div.className = 'cell';
                 div.onclick = () => makeMove(index);
-                if(cell === 1) { div.innerHTML = 'X'; div.style.color = '#111'; }
-                if(cell === 2) { div.innerHTML = 'O'; div.style.color = '#D4AF37'; }
+                if(cell === 'X') { div.innerHTML = 'X'; div.style.color = 'var(--text)'; }
+                if(cell === 'O') { div.innerHTML = 'O'; div.style.color = 'var(--gold)'; div.style.fontStyle = 'italic'; }
                 el.appendChild(div);
             });
         }
 
-        function makeMove(index) {
-            if(!currentGameId) return;
-            db.ref('games/' + currentGameId).transaction((game) => {
-                if (!game || game.turn !== myId || game.board[index] !== 0) return;
-                game.board[index] = (game.host === myId) ? 1 : 2;
-                game.turn = (game.host === myId) ? game.guest : game.host;
-                return game;
-            });
+        function updateGameStatus() {
+            const el = document.getElementById('game-msg');
+            if(checkWin(true)) return;
+            el.innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
+            el.style.color = isMyTurn ? "var(--text)" : "var(--sub-text)";
         }
 
-        function checkWinner(board) {
+        function checkWin(silent = false) {
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            return wins.some(c => board[c[0]] !== 0 && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
+            const winner = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
+            
+            if (winner && !silent) {
+                const msg = board[winner[0]] === mySymbol ? "Victory" : "Defeat";
+                document.getElementById('game-msg').innerText = msg;
+                document.getElementById('game-msg').style.color = "var(--gold)";
+                isMyTurn = false; 
+                return true;
+            }
+            if (!board.includes(null) && !winner) {
+                if(!silent) document.getElementById('game-msg').innerText = "Draw";
+                return true;
+            }
+            return !!winner;
         }
 
-        function leaveGame() {
-            if(currentGameId) {
-                db.ref('games/' + currentGameId).remove();
-                db.ref('users/' + myId).update({ state: 'idle', gameId: null });
-                window.location.hash = "";
-                location.reload();
-            }
+        async function leaveGame() {
+            if(gameChannel) { await gameChannel.send({ type: 'broadcast', event: 'leave' }); sb.removeChannel(gameChannel); }
+            board = Array(9).fill(null);
+            lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId });
+            document.getElementById('find-btn').disabled = false;
+            document.getElementById('find-btn').innerText = "Find a Game";
+            document.getElementById('status-text').innerText = "";
+            showView('view-lounge');
         }
 
         function showView(id) {
