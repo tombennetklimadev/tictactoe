@@ -2,51 +2,65 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TicTacToe | Final Minimal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TicTacToe | Ultra Minimal</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --bg: #ffffff; --text: #000000; --border: #000000; }
-        body { background: var(--bg); color: var(--text); font-family: monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .sidebar { width: 200px; border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; }
-        h1 { font-size: 1rem; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 5px; }
-        input { border: 1px solid var(--border); padding: 10px; font-size: 1rem; width: 160px; outline: none; margin-bottom: 10px; border-radius: 0; font-family: monospace; }
-        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 10px 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; border-radius: 0; font-family: monospace; }
-        .btn:hover { background: #fff; color: #000; }
-        #board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); border: 2px solid #000; margin-bottom: 20px; }
-        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; cursor: pointer; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { background: var(--bg); color: var(--text); font-family: monospace; margin: 0; display: flex; height: 100vh; flex-direction: column; }
+        
+        .container { display: flex; flex: 1; height: 100%; overflow: hidden; }
+        .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; padding: 20px; }
+        .sidebar { width: 180px; border-left: 1px solid var(--border); padding: 15px; overflow-y: auto; font-size: 0.8rem; }
+        
+        h1 { font-size: 0.9rem; font-weight: bold; text-transform: uppercase; margin: 0 0 15px 0; border-bottom: 1px solid #000; }
+        input { border: 1px solid var(--border); padding: 12px; font-size: 1rem; width: 100%; max-width: 250px; outline: none; margin-bottom: 10px; border-radius: 0; font-family: monospace; }
+        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 12px 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; border-radius: 0; font-family: monospace; text-transform: uppercase; }
+        
+        #board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; width: 100%; max-width: 300px; aspect-ratio: 1/1; border: 2px solid #000; margin-bottom: 20px; }
+        .cell { border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: bold; cursor: pointer; height: 100px; }
+        
         .hidden { display: none !important; }
-        #game-msg { font-size: 1rem; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; text-align: center; }
-        ul { list-style: none; padding: 0; }
-        li { padding: 5px 0; font-size: 0.8rem; text-transform: uppercase; }
+        #game-msg { font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; text-transform: uppercase; text-align: center; height: 1.2rem; }
+        ul { list-style: none; padding: 0; margin: 0; }
+        li { padding: 4px 0; text-transform: uppercase; overflow: hidden; text-overflow: ellipsis; }
+
+        @media (max-width: 600px) {
+            .container { flex-direction: column; }
+            .sidebar { width: 100%; height: 120px; border-left: none; border-top: 1px solid var(--border); order: 2; }
+            .main { order: 1; }
+            .cell { height: auto; }
+        }
     </style>
 </head>
 <body>
 
-    <div class="main">
-        <div id="view-login">
-            <h1>Identity</h1>
-            <input type="text" id="alias-input" placeholder="Name" maxlength="10">
-            <br>
-            <button class="btn" onclick="enterLounge()">Enter</button>
+    <div class="container">
+        <div class="main">
+            <div id="view-login">
+                <h1>Identity</h1>
+                <input type="text" id="alias-input" placeholder="NAME" maxlength="10">
+                <br>
+                <button class="btn" onclick="enterLounge()">Enter</button>
+            </div>
+
+            <div id="view-lounge" class="hidden">
+                <h1>Lounge</h1>
+                <button class="btn" id="find-btn" onclick="startSearching()">Find Match</button>
+            </div>
+
+            <div id="view-game" class="hidden">
+                <div id="game-msg">Syncing...</div>
+                <div id="board"></div>
+                <button id="back-btn" class="btn hidden" onclick="location.reload()">Back</button>
+            </div>
         </div>
 
-        <div id="view-lounge" class="hidden">
-            <h1>Lounge</h1>
-            <button class="btn" id="find-btn" onclick="startSearching()">Find Match</button>
+        <div class="sidebar">
+            <h1>Users</h1>
+            <ul id="user-list"></ul>
         </div>
-
-        <div id="view-game" class="hidden">
-            <div id="game-msg">Syncing...</div>
-            <div id="board"></div>
-            <button id="back-btn" class="btn hidden" onclick="location.reload()">Back</button>
-        </div>
-    </div>
-
-    <div class="sidebar">
-        <h1>Users</h1>
-        <ul id="user-list"></ul>
     </div>
 
     <script>
@@ -56,10 +70,10 @@
         const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let myId = Math.random().toString(36).substr(2, 9);
-        let myAlias = "", lobbyChannel = null, gameChannel = null, mySymbol = '', isMyTurn = false, board = Array(9).fill(null), gameActive = false, searchInterval = null;
+        let myAlias = "", lobbyChannel, gameChannel, mySymbol = '', isMyTurn = false, board = Array(9).fill(null), gameActive = false, retryStart;
 
         async function enterLounge() {
-            myAlias = document.getElementById('alias-input').value.trim();
+            myAlias = document.getElementById('alias-input').value.trim().toUpperCase();
             if(!myAlias) return;
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-lounge').classList.remove('hidden');
@@ -67,8 +81,15 @@
             lobbyChannel = sb.channel('lobby', { config: { presence: { key: myId } } });
             lobbyChannel
                 .on('presence', { event: 'sync' }, renderUserList)
-                .on('broadcast', { event: 'match_start' }, (p) => {
-                    if (p.payload.players.includes(myId)) setupGame(p.payload);
+                .on('broadcast', { event: 'match_req' }, (p) => {
+                    if (p.payload.players.includes(myId) && !gameActive) {
+                        // Bestätigen und Spiel starten
+                        lobbyChannel.send({ type: 'broadcast', event: 'match_ack', payload: { gid: p.payload.gid } });
+                        setupGame(p.payload);
+                    }
+                })
+                .on('broadcast', { event: 'match_ack' }, (p) => {
+                    if (gameActive && retryStart) clearInterval(retryStart);
                 })
                 .subscribe(async (s) => { 
                     if (s === 'SUBSCRIBED') await lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId }); 
@@ -81,44 +102,37 @@
             list.innerHTML = '';
             Object.values(state).flat().forEach(u => {
                 const li = document.createElement('li');
-                li.innerText = u.alias + (u.id === myId ? '*' : '');
+                li.innerText = (u.id === myId ? '> ' : '') + u.alias;
                 list.appendChild(li);
             });
         }
 
         async function startSearching() {
-            document.getElementById('find-btn').innerText = "Searching...";
+            document.getElementById('find-btn').innerText = "...";
             await lobbyChannel.track({ alias: myAlias, status: 'searching', id: myId });
             
-            // Polling: Alle 1.5 Sekunden prüfen, ob jemand da ist
-            searchInterval = setInterval(checkPresenceForMatch, 1500);
-        }
+            setInterval(() => {
+                if (gameActive) return;
+                const state = lobbyChannel.presenceState();
+                const searchers = Object.values(state).flat()
+                    .filter(u => u.status === 'searching')
+                    .sort((a,b) => a.id.localeCompare(b.id));
 
-        function checkPresenceForMatch() {
-            const state = lobbyChannel.presenceState();
-            const searchers = Object.values(state).flat()
-                .filter(u => u.status === 'searching')
-                .sort((a,b) => a.id.localeCompare(b.id));
-
-            if (searchers.length >= 2) {
-                clearInterval(searchInterval);
-                const data = {
-                    gid: 'game_' + searchers[0].id + searchers[1].id,
-                    players: [searchers[0].id, searchers[1].id],
-                    names: [searchers[0].alias, searchers[1].alias]
-                };
-                // Nur P1 triggert den Broadcast für alle Fälle
-                if (searchers[0].id === myId) {
-                    lobbyChannel.send({ type: 'broadcast', event: 'match_start', payload: data });
+                if (searchers.length >= 2 && searchers[0].id === myId) {
+                    const data = {
+                        gid: 'g_' + searchers[0].id + searchers[1].id,
+                        players: [searchers[0].id, searchers[1].id]
+                    };
+                    // Spam Match-Request bis Gegner acked
+                    lobbyChannel.send({ type: 'broadcast', event: 'match_req', payload: data });
+                    setupGame(data);
                 }
-                setupGame(data);
-            }
+            }, 2000);
         }
 
         async function setupGame(data) {
             if(gameActive) return;
             gameActive = true;
-            if(searchInterval) clearInterval(searchInterval);
 
             document.getElementById('view-lounge').classList.add('hidden');
             document.getElementById('view-game').classList.remove('hidden');
@@ -132,14 +146,14 @@
 
             gameChannel = sb.channel(data.gid);
             gameChannel
-                .on('broadcast', { event: 'move' }, (p) => {
+                .on('broadcast', { event: 'm' }, (p) => {
                     board[p.payload.i] = p.payload.s;
                     isMyTurn = true;
                     renderBoard();
                     if(!checkWin()) updateStatus();
                 })
-                .on('broadcast', { event: 'quit' }, () => {
-                    document.getElementById('game-msg').innerText = "Victory (Opponent Left)";
+                .on('broadcast', { event: 'q' }, () => {
+                    document.getElementById('game-msg').innerText = "OPPONENT LEFT";
                     document.getElementById('back-btn').classList.remove('hidden');
                     gameActive = false;
                 })
@@ -153,7 +167,7 @@
             board[i] = mySymbol;
             isMyTurn = false;
             renderBoard();
-            gameChannel.send({ type: 'broadcast', event: 'move', payload: { i, s: mySymbol } });
+            gameChannel.send({ type: 'broadcast', event: 'm', payload: { i, s: mySymbol } });
             if(!checkWin()) updateStatus();
         }
 
@@ -170,19 +184,19 @@
         }
 
         function updateStatus() {
-            document.getElementById('game-msg').innerText = isMyTurn ? "Your Turn" : "Opponent Turn";
+            document.getElementById('game-msg').innerText = isMyTurn ? "YOUR TURN" : "WAITING";
         }
 
         function checkWin() {
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
             const w = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
             if(w) {
-                document.getElementById('game-msg').innerText = board[w[0]] === mySymbol ? "Victory" : "Defeat";
+                document.getElementById('game-msg').innerText = board[w[0]] === mySymbol ? "VICTORY" : "DEFEAT";
                 document.getElementById('back-btn').classList.remove('hidden');
                 gameActive = false;
                 return true;
             } else if(!board.includes(null)) {
-                document.getElementById('game-msg').innerText = "Draw";
+                document.getElementById('game-msg').innerText = "DRAW";
                 document.getElementById('back-btn').classList.remove('hidden');
                 gameActive = false;
                 return true;
