@@ -3,48 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TicTacToe | Ultra Minimal</title>
+    <title>TicTacToe | Final Minimal</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --bg: #ffffff; --text: #000000; --border: #000000; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
+        body { background: var(--bg); color: var(--text); font-family: monospace; margin: 0; display: flex; height: 100vh; overflow: hidden; }
         .main { flex: 1; display: flex; justify-content: center; align-items: center; flex-direction: column; }
-        .sidebar { width: 200px; border-left: 1px solid var(--border); padding: 20px; }
-        
-        h1 { font-size: 1.2rem; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; }
-        input { border: 1px solid var(--border); padding: 10px; font-size: 1rem; width: 180px; outline: none; margin-bottom: 10px; border-radius: 0; }
-        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 10px 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; border-radius: 0; }
+        .sidebar { width: 200px; border-left: 1px solid var(--border); padding: 20px; overflow-y: auto; }
+        h1 { font-size: 1rem; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; border-bottom: 1px solid #000; padding-bottom: 5px; }
+        input { border: 1px solid var(--border); padding: 10px; font-size: 1rem; width: 160px; outline: none; margin-bottom: 10px; border-radius: 0; font-family: monospace; }
+        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 10px 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; border-radius: 0; font-family: monospace; }
         .btn:hover { background: #fff; color: #000; }
-        
         #board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); border: 2px solid #000; margin-bottom: 20px; }
         .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 2rem; font-weight: bold; cursor: pointer; }
-        
         .hidden { display: none !important; }
-        #game-msg { font-size: 1rem; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; }
+        #game-msg { font-size: 1rem; font-weight: bold; margin-bottom: 20px; text-transform: uppercase; text-align: center; }
         ul { list-style: none; padding: 0; }
-        li { padding: 5px 0; font-size: 0.9rem; border-bottom: 1px solid #eee; }
+        li { padding: 5px 0; font-size: 0.8rem; text-transform: uppercase; }
     </style>
 </head>
 <body>
 
     <div class="main">
         <div id="view-login">
-            <h1>Alias</h1>
-            <input type="text" id="alias-input" maxlength="12">
+            <h1>Identity</h1>
+            <input type="text" id="alias-input" placeholder="Name" maxlength="10">
             <br>
             <button class="btn" onclick="enterLounge()">Enter</button>
         </div>
 
         <div id="view-lounge" class="hidden">
             <h1>Lounge</h1>
-            <button class="btn" id="find-btn" onclick="startSearching()">Find Game</button>
+            <button class="btn" id="find-btn" onclick="startSearching()">Find Match</button>
         </div>
 
         <div id="view-game" class="hidden">
-            <div id="game-msg">Waiting</div>
+            <div id="game-msg">Syncing...</div>
             <div id="board"></div>
-            <button id="back-btn" class="btn hidden" onclick="backToLounge()">Back</button>
+            <button id="back-btn" class="btn hidden" onclick="location.reload()">Back</button>
         </div>
     </div>
 
@@ -60,24 +56,19 @@
         const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let myId = Math.random().toString(36).substr(2, 9);
-        let myAlias = "", lobbyChannel = null, gameChannel = null, mySymbol = '', isMyTurn = false, board = Array(9).fill(null), gameActive = false;
+        let myAlias = "", lobbyChannel = null, gameChannel = null, mySymbol = '', isMyTurn = false, board = Array(9).fill(null), gameActive = false, searchInterval = null;
 
         async function enterLounge() {
             myAlias = document.getElementById('alias-input').value.trim();
-            if(myAlias.length < 2) return;
+            if(!myAlias) return;
             document.getElementById('view-login').classList.add('hidden');
             document.getElementById('view-lounge').classList.remove('hidden');
 
             lobbyChannel = sb.channel('lobby', { config: { presence: { key: myId } } });
             lobbyChannel
-                .on('presence', { event: 'sync' }, () => {
-                    renderUserList();
-                    autoMatch(); // Prüfe ständig ob ein Match möglich ist
-                })
-                .on('broadcast', { event: 'match' }, (p) => {
-                    if (p.payload.p1 === myId || p.payload.p2 === myId) {
-                        if(!gameActive) setupGame(p.payload);
-                    }
+                .on('presence', { event: 'sync' }, renderUserList)
+                .on('broadcast', { event: 'match_start' }, (p) => {
+                    if (p.payload.players.includes(myId)) setupGame(p.payload);
                 })
                 .subscribe(async (s) => { 
                     if (s === 'SUBSCRIBED') await lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId }); 
@@ -90,7 +81,7 @@
             list.innerHTML = '';
             Object.values(state).flat().forEach(u => {
                 const li = document.createElement('li');
-                li.innerText = u.alias + (u.id === myId ? ' (YOU)' : '');
+                li.innerText = u.alias + (u.id === myId ? '*' : '');
                 list.appendChild(li);
             });
         }
@@ -98,22 +89,27 @@
         async function startSearching() {
             document.getElementById('find-btn').innerText = "Searching...";
             await lobbyChannel.track({ alias: myAlias, status: 'searching', id: myId });
+            
+            // Polling: Alle 1.5 Sekunden prüfen, ob jemand da ist
+            searchInterval = setInterval(checkPresenceForMatch, 1500);
         }
 
-        function autoMatch() {
-            const searching = Object.values(lobbyChannel.presenceState()).flat()
+        function checkPresenceForMatch() {
+            const state = lobbyChannel.presenceState();
+            const searchers = Object.values(state).flat()
                 .filter(u => u.status === 'searching')
                 .sort((a,b) => a.id.localeCompare(b.id));
 
-            if (searching.length >= 2) {
-                const data = { 
-                    gid: 'g_' + searching[0].id + searching[1].id, // Konsistente ID für beide
-                    p1: searching[0].id, p2: searching[1].id, 
-                    n1: searching[0].alias, n2: searching[1].alias 
+            if (searchers.length >= 2) {
+                clearInterval(searchInterval);
+                const data = {
+                    gid: 'game_' + searchers[0].id + searchers[1].id,
+                    players: [searchers[0].id, searchers[1].id],
+                    names: [searchers[0].alias, searchers[1].alias]
                 };
-                // Nur einer sendet das Broadcast, aber beide können setupGame triggern
-                if (searching[0].id === myId) {
-                    lobbyChannel.send({ type: 'broadcast', event: 'match', payload: data });
+                // Nur P1 triggert den Broadcast für alle Fälle
+                if (searchers[0].id === myId) {
+                    lobbyChannel.send({ type: 'broadcast', event: 'match_start', payload: data });
                 }
                 setupGame(data);
             }
@@ -122,36 +118,34 @@
         async function setupGame(data) {
             if(gameActive) return;
             gameActive = true;
+            if(searchInterval) clearInterval(searchInterval);
+
             document.getElementById('view-lounge').classList.add('hidden');
             document.getElementById('view-game').classList.remove('hidden');
-            document.getElementById('back-btn').classList.add('hidden');
             
-            mySymbol = (myId === data.p1) ? 'X' : 'O';
+            mySymbol = (myId === data.players[0]) ? 'X' : 'O';
             isMyTurn = (mySymbol === 'X');
             board = Array(9).fill(null);
             
             renderBoard();
             updateStatus();
 
-            if(gameChannel) sb.removeChannel(gameChannel);
             gameChannel = sb.channel(data.gid);
             gameChannel
-                .on('broadcast', { event: 'm' }, (p) => receiveMove(p.payload))
-                .on('broadcast', { event: 'q' }, () => { 
-                    document.getElementById('game-msg').innerText = "VICTORY (OPPONENT LEFT)"; 
-                    showBack(); 
+                .on('broadcast', { event: 'move' }, (p) => {
+                    board[p.payload.i] = p.payload.s;
+                    isMyTurn = true;
+                    renderBoard();
+                    if(!checkWin()) updateStatus();
+                })
+                .on('broadcast', { event: 'quit' }, () => {
+                    document.getElementById('game-msg').innerText = "Victory (Opponent Left)";
+                    document.getElementById('back-btn').classList.remove('hidden');
+                    gameActive = false;
                 })
                 .subscribe();
             
             await lobbyChannel.track({ alias: myAlias, status: 'playing', id: myId });
-        }
-
-        function receiveMove(p) {
-            if(board[p.i]) return;
-            board[p.i] = p.s;
-            isMyTurn = true;
-            renderBoard();
-            if(!checkWin()) updateStatus();
         }
 
         function makeMove(i) {
@@ -159,7 +153,7 @@
             board[i] = mySymbol;
             isMyTurn = false;
             renderBoard();
-            gameChannel.send({ type: 'broadcast', event: 'm', payload: { i, s: mySymbol } });
+            gameChannel.send({ type: 'broadcast', event: 'move', payload: { i, s: mySymbol } });
             if(!checkWin()) updateStatus();
         }
 
@@ -176,39 +170,24 @@
         }
 
         function updateStatus() {
-            document.getElementById('game-msg').innerText = isMyTurn ? "YOUR TURN" : "OPPONENT'S TURN";
+            document.getElementById('game-msg').innerText = isMyTurn ? "Your Turn" : "Opponent Turn";
         }
 
         function checkWin() {
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
             const w = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
             if(w) {
-                document.getElementById('game-msg').innerText = board[w[0]] === mySymbol ? "VICTORY" : "DEFEAT";
-                showBack();
+                document.getElementById('game-msg').innerText = board[w[0]] === mySymbol ? "Victory" : "Defeat";
+                document.getElementById('back-btn').classList.remove('hidden');
+                gameActive = false;
                 return true;
             } else if(!board.includes(null)) {
-                document.getElementById('game-msg').innerText = "DRAW";
-                showBack();
+                document.getElementById('game-msg').innerText = "Draw";
+                document.getElementById('back-btn').classList.remove('hidden');
+                gameActive = false;
                 return true;
             }
             return false;
-        }
-
-        function showBack() {
-            gameActive = false;
-            document.getElementById('back-btn').classList.remove('hidden');
-        }
-
-        async function backToLounge() {
-            if(gameChannel) {
-                await gameChannel.send({ type: 'broadcast', event: 'q' });
-                sb.removeChannel(gameChannel);
-            }
-            gameActive = false;
-            document.getElementById('view-game').classList.add('hidden');
-            document.getElementById('view-lounge').classList.remove('hidden');
-            document.getElementById('find-btn').innerText = "FIND GAME";
-            await lobbyChannel.track({ alias: myAlias, status: 'idle', id: myId });
         }
     </script>
 </body>
