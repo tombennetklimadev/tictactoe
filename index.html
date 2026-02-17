@@ -52,28 +52,28 @@
         <div id="branding"><h1>TICTACTOE</h1></div>
 
         <div id="view-login">
-            <input type="text" id="username" placeholder="Enter Name" maxlength="10">
+            <input type="text" id="username" placeholder="Dein Name" maxlength="10" autofocus>
             <br>
-            <button class="btn" onclick="login()">Enter Arena</button>
+            <button class="btn" onclick="login()">Arena Betreten</button>
             <p id="error-msg" class="error hidden"></p>
         </div>
 
         <div id="view-lounge" class="hidden">
-            <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight: 600;">Ready to play?</p>
-            <button class="btn" id="find-btn" onclick="search()">Find Match</button>
-            <button class="btn" onclick="cancelSearch()" id="cancel-btn" class="hidden" style="margin-top: 15px; background: #fff; color: #000;">Cancel</button>
+            <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight: 600;">Bereit zu spielen?</p>
+            <button class="btn" id="find-btn" onclick="search()">Gegner Suchen</button>
+            <button class="btn" onclick="cancelSearch()" id="cancel-btn" class="hidden" style="margin-top: 15px; background: #fff; color: #000;">Abbrechen</button>
         </div>
 
         <div id="view-game" class="hidden">
             <p id="game-info" style="font-size: 0.9rem; margin-bottom: 10px; color: #666;"></p>
             <p id="game-status" style="font-weight: 900; margin-bottom: 15px; text-transform: uppercase; font-size: 1.5rem;"></p>
             <div id="board"></div>
-            <button class="btn" id="back-btn" onclick="backToLobby()" style="margin-top: 30px; display: none;">Back to Lobby</button>
+            <button class="btn" id="back-btn" onclick="backToLobby()" style="margin-top: 30px; display: none;">Zurück zur Lobby</button>
         </div>
     </main>
 
     <aside class="sidebar">
-        <p class="label">Online Players</p>
+        <p class="label">Online Spieler</p>
         <ul id="user-list"></ul>
     </aside>
 </div>
@@ -96,13 +96,13 @@
         log('Supabase initialized');
     } catch (e) {
         log('Supabase error: ' + e.message);
-        document.getElementById('error-msg').innerText = 'Connection error. Please refresh.';
+        document.getElementById('error-msg').innerText = 'Verbindungsfehler. Bitte Seite neu laden.';
         document.getElementById('error-msg').classList.remove('hidden');
     }
 
-    let myId = localStorage.getItem('tid') || 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('tid', myId);
-    let myAlias = localStorage.getItem('talias') || "";
+    // Generiere bei jedem Laden eine neue ID (kein localStorage)
+    let myId = 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    let myAlias = ""; // KEIN localStorage mehr
     let lobby, gameChan, mySymbol = '', opponentSymbol = '', isMyTurn = false, board = Array(9).fill(null);
     let gameActive = false;
     let opponentAlias = "";
@@ -113,22 +113,33 @@
     log('My ID: ' + myId);
     log('Active Game: ' + activeGameId);
 
-    if (myAlias && !activeGameId) {
-        log('Auto-login with saved alias: ' + myAlias);
-        setTimeout(() => login(), 100);
+    // Enter-Taste im Input-Feld
+    document.getElementById('username').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            login();
+        }
+    });
+
+    // KEIN Auto-Login mehr! Zeige immer Login-Screen
+    if (activeGameId) {
+        // Falls URL ein Game hat, leite zurück zur Startseite
+        window.location.href = window.location.pathname;
     }
 
     async function login() {
         const input = document.getElementById('username').value.trim();
-        if (input) myAlias = input.toUpperCase();
+        myAlias = input.toUpperCase();
+
         if (!myAlias || myAlias.length < 2) {
-            alert('Bitte gib einen Namen ein (mindestens 2 Zeichen)');
+            document.getElementById('error-msg').innerText = 'Bitte gib einen Namen ein (mind. 2 Zeichen)';
+            document.getElementById('error-msg').classList.remove('hidden');
             return;
         }
-        localStorage.setItem('talias', myAlias);
+
         log('Login as: ' + myAlias);
 
         document.getElementById('view-login').classList.add('hidden');
+        document.getElementById('error-msg').classList.add('hidden');
 
         try {
             lobby = sb.channel('lobby', { 
@@ -406,11 +417,15 @@
     }
 
     async function backToLobby() {
-        log('Back to lobby');
+        log('Back to lobby - reloading page');
         if (gameChan) {
             await gameChan.unsubscribe();
         }
+        if (lobby) {
+            await lobby.untrack();
+        }
 
+        // Seite komplett neu laden (ohne Cache)
         window.location.href = window.location.pathname;
     }
 
