@@ -8,70 +8,21 @@
     <style>
         :root { --bg: #ffffff; --text: #000000; --light-grey: #f8f8f8; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; letter-spacing: -0.02em; }
-        
         body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
-
         .app-container { display: flex; width: 100%; height: 100%; }
-        
-        /* Zentraler Bereich - Alles exakt mittig */
-        .main-stage { 
-            flex: 1; 
-            display: flex; 
-            flex-direction: column; 
-            justify-content: center; 
-            align-items: center; 
-            padding: 20px;
-            text-align: center;
-        }
-
-        .sidebar { 
-            width: 280px; 
-            background: var(--light-grey); 
-            display: flex; 
-            flex-direction: column; 
-            padding: 40px 30px; 
-            border-left: 1px solid #eee; 
-        }
-
+        .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
+        .sidebar { width: 280px; background: var(--light-grey); display: flex; flex-direction: column; padding: 40px 30px; border-left: 1px solid #eee; }
         h1 { font-size: 3.5rem; font-weight: 900; text-transform: uppercase; line-height: 0.9; margin-bottom: 5px; }
         .subtitle { font-size: 0.75rem; color: #aaa; margin-bottom: 4rem; text-transform: uppercase; letter-spacing: 0.4em; font-weight: 600; }
-        
-        /* Sauberes, leeres Input-Feld */
         .input-container { width: 100%; max-width: 300px; margin-bottom: 2.5rem; }
-        input { 
-            width: 100%; 
-            padding: 15px 0; 
-            border: none; 
-            border-bottom: 2px solid var(--text); 
-            font-size: 1.5rem; 
-            outline: none; 
-            text-align: center; 
-            text-transform: uppercase;
-            background: transparent;
-        }
-
-        .primary-btn { 
-            background-color: var(--text); 
-            color: var(--bg); 
-            border: none; 
-            padding: 20px 60px; 
-            font-size: 0.8rem; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            letter-spacing: 0.3em; 
-            cursor: pointer; 
-            transition: 0.2s; 
-        }
+        input { width: 100%; padding: 15px 0; border: none; border-bottom: 2px solid var(--text); font-size: 1.5rem; outline: none; text-align: center; text-transform: uppercase; background: transparent; }
+        .primary-btn { background-color: var(--text); color: var(--bg); border: none; padding: 20px 60px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3em; cursor: pointer; transition: 0.2s; }
         .primary-btn:hover { opacity: 0.7; }
-
-        /* Game Elements */
         #game-board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); border: 2px solid #000; margin-top: 20px; }
         .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: 900; cursor: pointer; }
-        
         .section-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 1rem; color: #bbb; }
         .player-item { padding: 8px 0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
         .hidden { display: none !important; }
-
         @media (max-width: 800px) {
             .app-container { flex-direction: column; }
             .sidebar { width: 100%; height: 150px; order: 2; border-left: none; border-top: 1px solid #eee; padding: 20px; }
@@ -90,9 +41,7 @@
         </div>
 
         <div id="login-screen">
-            <div class="input-container">
-                <input type="text" id="username" placeholder="" maxlength="10">
-            </div>
+            <div class="input-container"><input type="text" id="username" placeholder="" maxlength="10"></div>
             <button class="primary-btn" onclick="enterArena()">Enter</button>
         </div>
 
@@ -103,7 +52,7 @@
         <div id="game-screen" class="hidden">
             <p id="game-status" style="font-weight: 800; text-transform: uppercase; margin-bottom: 15px;"></p>
             <div id="game-board"></div>
-            <button class="primary-btn hidden" id="back-btn" onclick="location.reload()" style="margin-top: 30px;">Back</button>
+            <button class="primary-btn" id="back-btn" onclick="goHome()" style="margin-top: 30px; display:none;">Back</button>
         </div>
     </main>
 
@@ -121,17 +70,48 @@
     const { createClient } = supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    let myId = Math.random().toString(36).substr(2, 9);
-    let myAlias = "", lobby, gameChan, mySymbol = '', isMyTurn = false, board = Array(9).fill(null);
+    let myId = localStorage.getItem('ttt_id') || Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('ttt_id', myId);
+    
+    let myAlias = localStorage.getItem('ttt_alias') || "";
+    let lobby, gameChan, mySymbol = '', isMyTurn = false, board = Array(9).fill(null);
+
+    // URL Check: Sind wir in einem Spiel?
+    const urlParams = new URLSearchParams(window.location.search);
+    const gameIdFromUrl = urlParams.get('game');
+
+    window.onload = () => {
+        if (gameIdFromUrl && myAlias) {
+            setupGameUI();
+            initGame(gameIdFromUrl);
+        } else if (myAlias) {
+            setupLoungeUI();
+        }
+    };
 
     async function enterArena() {
         myAlias = document.getElementById('username').value.trim().toUpperCase();
         if(!myAlias) return;
+        localStorage.setItem('ttt_alias', myAlias);
+        setupLoungeUI();
+    }
 
+    function setupLoungeUI() {
         document.getElementById('login-screen').classList.add('hidden');
         document.getElementById('match-screen').classList.remove('hidden');
         document.getElementById('sidebar').classList.remove('hidden');
+        connectLobby();
+    }
 
+    function setupGameUI() {
+        document.getElementById('login-screen').classList.add('hidden');
+        document.getElementById('match-screen').classList.add('hidden');
+        document.getElementById('game-screen').classList.remove('hidden');
+        document.getElementById('sidebar').classList.remove('hidden');
+        connectLobby();
+    }
+
+    function connectLobby() {
         lobby = sb.channel('lobby', { config: { presence: { key: myId } } });
         lobby.on('presence', { event: 'sync' }, () => {
             const state = lobby.presenceState();
@@ -146,12 +126,14 @@
                 list.appendChild(li);
             });
             document.getElementById('live-count').innerText = count;
-            checkAutoMatch();
+            if (!gameIdFromUrl) checkAutoMatch();
         })
         .on('broadcast', { event: 'match_go' }, p => {
-            if(p.payload.players.includes(myId)) initGame(p.payload);
+            if(p.payload.players.includes(myId)) {
+                window.location.search = `?game=${p.payload.gid}`;
+            }
         })
-        .subscribe(async s => { if(s==='SUBSCRIBED') await lobby.track({alias:myAlias, id:myId, status:'idle'}); });
+        .subscribe(async s => { if(s==='SUBSCRIBED') await lobby.track({alias:myAlias, id:myId, status: gameIdFromUrl ? 'playing' : 'idle'}); });
     }
 
     async function startSearch() {
@@ -163,28 +145,26 @@
         const searchers = Object.values(lobby.presenceState()).flat()
             .filter(u => u.status === 'searching').sort((a,b) => a.id.localeCompare(b.id));
         if(searchers.length >= 2 && searchers[0].id === myId) {
-            const data = { gid: 'g_'+searchers[0].id+searchers[1].id, players: [searchers[0].id, searchers[1].id] };
-            lobby.send({ type: 'broadcast', event: 'match_go', payload: data });
+            const gid = 'g_' + searchers[0].id + searchers[1].id;
+            lobby.send({ type: 'broadcast', event: 'match_go', payload: { gid, players: [searchers[0].id, searchers[1].id] } });
         }
     }
 
-    async function initGame(data) {
-        document.getElementById('match-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        mySymbol = (myId === data.players[0]) ? 'X' : 'O';
+    async function initGame(gid) {
+        // Bestimme Symbol basierend auf der GID (P1 bekommt X)
+        mySymbol = gid.includes(myId) && gid.indexOf(myId) < 15 ? 'X' : 'O'; 
         isMyTurn = (mySymbol === 'X');
-        board = Array(9).fill(null);
+        
         renderBoard();
         updateMsg();
 
-        gameChan = sb.channel(data.gid);
+        gameChan = sb.channel(gid);
         gameChan.on('broadcast', { event: 'm' }, p => {
             board[p.payload.i] = p.payload.s;
             isMyTurn = true;
             renderBoard();
             if(!checkWin()) updateMsg();
         }).subscribe();
-        await lobby.track({alias:myAlias, id:myId, status:'playing'});
     }
 
     function renderBoard() {
@@ -213,10 +193,14 @@
         const w = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
         if(w || !board.includes(null)) {
             document.getElementById('game-status').innerText = w ? (board[w[0]] === mySymbol ? "Victory" : "Defeat") : "Draw";
-            document.getElementById('back-btn').classList.remove('hidden');
+            document.getElementById('back-btn').style.display = 'inline-block';
             return true;
         }
         return false;
+    }
+
+    function goHome() {
+        window.location.search = '';
     }
 </script>
 </body>
