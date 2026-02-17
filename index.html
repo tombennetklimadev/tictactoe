@@ -3,204 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TicTacToe | Digital Arena</title>
+    <title>TicTacToe | Arena</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --bg: #ffffff; --text: #000000; --light-grey: #f8f8f8; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; letter-spacing: -0.02em; }
-        body { background-color: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
-        .app-container { display: flex; width: 100%; height: 100%; }
-        .main-stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; text-align: center; }
-        .sidebar { width: 280px; background: var(--light-grey); display: flex; flex-direction: column; padding: 40px 30px; border-left: 1px solid #eee; }
-        h1 { font-size: 3.5rem; font-weight: 900; text-transform: uppercase; line-height: 0.9; margin-bottom: 5px; }
-        .subtitle { font-size: 0.75rem; color: #aaa; margin-bottom: 4rem; text-transform: uppercase; letter-spacing: 0.4em; font-weight: 600; }
-        .input-container { width: 100%; max-width: 300px; margin-bottom: 2.5rem; }
-        input { width: 100%; padding: 15px 0; border: none; border-bottom: 2px solid var(--text); font-size: 1.5rem; outline: none; text-align: center; text-transform: uppercase; background: transparent; }
-        .primary-btn { background-color: var(--text); color: var(--bg); border: none; padding: 20px 60px; font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3em; cursor: pointer; transition: 0.2s; }
-        .primary-btn:hover { opacity: 0.7; }
-        #game-board { display: grid; grid-template-columns: repeat(3, 100px); grid-template-rows: repeat(3, 100px); border: 2px solid #000; margin-top: 20px; }
-        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 2.5rem; font-weight: 900; cursor: pointer; }
-        .section-label { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 1rem; color: #bbb; }
-        .player-item { padding: 8px 0; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
+        :root { --bg: #ffffff; --text: #000000; --sidebar-bg: #fcfcfc; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Layout */
+        .app { display: flex; width: 100%; height: 100%; }
+        .main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
+        .sidebar { width: 240px; border-left: 1px solid #000; background: var(--sidebar-bg); padding: 40px 20px; display: flex; flex-direction: column; }
+        
+        /* UI Elements */
+        h1 { font-size: 2.5rem; font-weight: 900; text-transform: uppercase; margin-bottom: 2rem; letter-spacing: -0.05em; }
+        input { border: none; border-bottom: 2px solid #000; padding: 10px; font-size: 1.5rem; width: 250px; text-align: center; outline: none; margin-bottom: 2rem; text-transform: uppercase; }
+        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 15px 40px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; }
+        .btn:hover { background: #fff; color: #000; }
+        
+        /* Board */
+        #board { display: grid; grid-template-columns: repeat(3, 100px); border: 2px solid #000; margin-top: 20px; }
+        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 3rem; font-weight: 900; cursor: pointer; }
+        
         .hidden { display: none !important; }
+        .label { font-size: 0.7rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; }
+        ul { list-style: none; }
+        li { padding: 5px 0; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
+
         @media (max-width: 800px) {
-            .app-container { flex-direction: column; }
-            .sidebar { width: 100%; height: 150px; order: 2; border-left: none; border-top: 1px solid #eee; padding: 20px; }
-            .main-stage { order: 1; flex: 1; }
-            h1 { font-size: 2.5rem; }
+            .app { flex-direction: column; }
+            .sidebar { width: 100%; height: 150px; border-left: none; border-top: 1px solid #000; order: 2; }
+            .main { order: 1; flex: 1; }
         }
     </style>
 </head>
 <body>
 
-<div class="app-container">
-    <main class="main-stage">
-        <div id="branding">
-            <h1>TICTACTOE</h1>
-            <p class="subtitle">Digital Arena</p>
+<div class="app">
+    <main class="main">
+        <div id="branding"><h1>TICTACTOE</h1></div>
+
+        <div id="view-login">
+            <input type="text" id="username" placeholder="" maxlength="10">
+            <br>
+            <button class="btn" onclick="login()">Enter</button>
         </div>
 
-        <div id="login-screen">
-            <div class="input-container"><input type="text" id="username" placeholder="" maxlength="10"></div>
-            <button class="primary-btn" onclick="enterArena()">Enter</button>
+        <div id="view-lounge" class="hidden">
+            <button class="btn" id="find-btn" onclick="search()">Find Match</button>
         </div>
 
-        <div id="match-screen" class="hidden">
-            <button class="primary-btn" id="find-btn" onclick="startSearch()">Find Match</button>
-        </div>
-
-        <div id="game-screen" class="hidden">
-            <p id="game-status" style="font-weight: 800; text-transform: uppercase; margin-bottom: 15px;"></p>
-            <div id="game-board"></div>
-            <button class="primary-btn" id="back-btn" onclick="goHome()" style="margin-top: 30px; display:none;">Back</button>
+        <div id="view-game" class="hidden">
+            <p id="game-status" style="font-weight: 900; margin-bottom: 15px; text-transform: uppercase;"></p>
+            <div id="board"></div>
+            <button class="btn hidden" id="back-btn" onclick="location.href=location.pathname" style="margin-top: 30px;">Back</button>
         </div>
     </main>
 
-    <aside id="sidebar" class="sidebar hidden">
-        <div class="section-label">Online</div>
-        <div style="font-size: 1.5rem; font-weight: 800; margin-bottom: 2rem;" id="live-count">0</div>
-        <div class="section-label">Members</div>
-        <ul id="player-ul" style="list-style: none;"></ul>
+    <aside class="sidebar">
+        <p class="label">Online</p>
+        <ul id="user-list"></ul>
     </aside>
 </div>
 
 <script>
-    const SUPABASE_URL = 'https://qzkpslpphypnintdnxji.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_ELLj2wdw6drr9c6gztrUrw_B7IVvdvc';
-    const { createClient } = supabase;
-    const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-    let myId = localStorage.getItem('ttt_id') || Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('ttt_id', myId);
+    const sb = supabase.createClient('https://qzkpslpphypnintdnxji.supabase.co', 'sb_publishable_ELLj2wdw6drr9c6gztrUrw_B7IVvdvc');
     
-    let myAlias = localStorage.getItem('ttt_alias') || "";
+    let myId = localStorage.getItem('tid') || Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('tid', myId);
+    let myAlias = localStorage.getItem('talias') || "";
     let lobby, gameChan, mySymbol = '', isMyTurn = false, board = Array(9).fill(null);
 
-    // URL Check: Sind wir in einem Spiel?
-    const urlParams = new URLSearchParams(window.location.search);
-    const gameIdFromUrl = urlParams.get('game');
+    const params = new URLSearchParams(window.location.search);
+    const activeGameId = params.get('game');
 
-    window.onload = () => {
-        if (gameIdFromUrl && myAlias) {
-            setupGameUI();
-            initGame(gameIdFromUrl);
-        } else if (myAlias) {
-            setupLoungeUI();
-        }
-    };
+    // Wenn Alias existiert, direkt einloggen
+    if (myAlias) login();
 
-    async function enterArena() {
-        myAlias = document.getElementById('username').value.trim().toUpperCase();
-        if(!myAlias) return;
-        localStorage.setItem('ttt_alias', myAlias);
-        setupLoungeUI();
-    }
+    async function login() {
+        const input = document.getElementById('username').value.trim();
+        if (input) myAlias = input.toUpperCase();
+        if (!myAlias) return;
+        localStorage.setItem('talias', myAlias);
 
-    function setupLoungeUI() {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('match-screen').classList.remove('hidden');
-        document.getElementById('sidebar').classList.remove('hidden');
-        connectLobby();
-    }
-
-    function setupGameUI() {
-        document.getElementById('login-screen').classList.add('hidden');
-        document.getElementById('match-screen').classList.add('hidden');
-        document.getElementById('game-screen').classList.remove('hidden');
-        document.getElementById('sidebar').classList.remove('hidden');
-        connectLobby();
-    }
-
-    function connectLobby() {
+        document.getElementById('view-login').classList.add('hidden');
+        
         lobby = sb.channel('lobby', { config: { presence: { key: myId } } });
         lobby.on('presence', { event: 'sync' }, () => {
             const state = lobby.presenceState();
-            const list = document.getElementById('player-ul');
+            const list = document.getElementById('user-list');
             list.innerHTML = '';
-            let count = 0;
-            Object.values(state).flat().forEach(u => {
-                count++;
+            const all = Object.values(state).flat();
+            all.forEach(u => {
                 const li = document.createElement('li');
-                li.className = 'player-item';
-                li.innerText = (u.id === myId ? '> ' : '') + u.alias;
+                li.innerText = u.alias + (u.id === myId ? ' (YOU)' : '');
                 list.appendChild(li);
             });
-            document.getElementById('live-count').innerText = count;
-            if (!gameIdFromUrl) checkAutoMatch();
-        })
-        .on('broadcast', { event: 'match_go' }, p => {
-            if(p.payload.players.includes(myId)) {
-                window.location.search = `?game=${p.payload.gid}`;
+            if (!activeGameId) checkMatch(all);
+        }).subscribe(async s => {
+            if (s === 'SUBSCRIBED') {
+                await lobby.track({ alias: myAlias, id: myId, status: activeGameId ? 'playing' : 'idle' });
+                if (activeGameId) initGame(activeGameId);
+                else document.getElementById('view-lounge').classList.remove('hidden');
             }
-        })
-        .subscribe(async s => { if(s==='SUBSCRIBED') await lobby.track({alias:myAlias, id:myId, status: gameIdFromUrl ? 'playing' : 'idle'}); });
+        });
     }
 
-    async function startSearch() {
-        document.getElementById('find-btn').innerText = "Searching...";
-        await lobby.track({alias:myAlias, id:myId, status:'searching'});
+    async function search() {
+        document.getElementById('find-btn').innerText = "SEARCHING...";
+        await lobby.track({ alias: myAlias, id: myId, status: 'searching' });
     }
 
-    function checkAutoMatch() {
-        const searchers = Object.values(lobby.presenceState()).flat()
-            .filter(u => u.status === 'searching').sort((a,b) => a.id.localeCompare(b.id));
-        if(searchers.length >= 2 && searchers[0].id === myId) {
+    function checkMatch(users) {
+        const searchers = users.filter(u => u.status === 'searching').sort((a,b) => a.id.localeCompare(b.id));
+        if (searchers.length >= 2) {
             const gid = 'g_' + searchers[0].id + searchers[1].id;
-            lobby.send({ type: 'broadcast', event: 'match_go', payload: { gid, players: [searchers[0].id, searchers[1].id] } });
+            if (myId === searchers[0].id || myId === searchers[1].id) {
+                window.location.search = `?game=${gid}`;
+            }
         }
     }
 
     async function initGame(gid) {
-        // Bestimme Symbol basierend auf der GID (P1 bekommt X)
-        mySymbol = gid.includes(myId) && gid.indexOf(myId) < 15 ? 'X' : 'O'; 
+        document.getElementById('view-lounge').classList.add('hidden');
+        document.getElementById('view-game').classList.remove('hidden');
+        
+        // P1 ist derjenige, dessen ID in der GID zuerst kommt
+        mySymbol = gid.includes(myId) && gid.indexOf(myId) < 15 ? 'X' : 'O';
         isMyTurn = (mySymbol === 'X');
         
-        renderBoard();
-        updateMsg();
+        drawBoard();
+        msg();
 
         gameChan = sb.channel(gid);
-        gameChan.on('broadcast', { event: 'm' }, p => {
+        gameChan.on('broadcast', { event: 'move' }, p => {
             board[p.payload.i] = p.payload.s;
             isMyTurn = true;
-            renderBoard();
-            if(!checkWin()) updateMsg();
+            drawBoard();
+            msg();
         }).subscribe();
     }
 
-    function renderBoard() {
-        const b = document.getElementById('game-board');
+    function drawBoard() {
+        const b = document.getElementById('board');
         b.innerHTML = '';
         board.forEach((c, i) => {
             const d = document.createElement('div');
             d.className = 'cell';
             d.innerText = c || '';
             d.onclick = () => {
-                if(!isMyTurn || board[i]) return;
+                if (!isMyTurn || board[i] || checkWin(true)) return;
                 board[i] = mySymbol;
                 isMyTurn = false;
-                renderBoard();
-                gameChan.send({ type: 'broadcast', event: 'm', payload: { i, s: mySymbol } });
-                if(!checkWin()) updateMsg();
+                drawBoard();
+                gameChan.send({ type: 'broadcast', event: 'move', payload: { i, s: mySymbol } });
+                msg();
             };
             b.appendChild(d);
         });
+        checkWin();
     }
 
-    function updateMsg() { document.getElementById('game-status').innerText = isMyTurn ? "Your Turn" : "Opponent Turn"; }
+    function msg() {
+        const el = document.getElementById('game-status');
+        if (!checkWin(true)) el.innerText = isMyTurn ? "Your Turn" : "Opponent's Turn";
+    }
 
-    function checkWin() {
+    function checkWin(silent = false) {
         const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
         const w = wins.find(c => board[c[0]] && board[c[0]] === board[c[1]] && board[c[0]] === board[c[2]]);
-        if(w || !board.includes(null)) {
-            document.getElementById('game-status').innerText = w ? (board[w[0]] === mySymbol ? "Victory" : "Defeat") : "Draw";
-            document.getElementById('back-btn').style.display = 'inline-block';
+        if (w || !board.includes(null)) {
+            if (!silent) {
+                document.getElementById('game-status').innerText = w ? (board[w[0]] === mySymbol ? "Victory" : "Defeat") : "Draw";
+                document.getElementById('back-btn').classList.remove('hidden');
+            }
             return true;
         }
         return false;
-    }
-
-    function goHome() {
-        window.location.search = '';
     }
 </script>
 </body>
