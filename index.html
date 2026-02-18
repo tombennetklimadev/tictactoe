@@ -2,443 +2,173 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TicTacToe | Arena</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Sync BTC Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #ffffff; --text: #000000; --sidebar-bg: #fcfcfc; }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
-
-        /* Layout */
-        .app { display: flex; width: 100%; height: 100%; }
-        .main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 20px; }
-        .sidebar { width: 240px; border-left: 1px solid #000; background: var(--sidebar-bg); padding: 40px 20px; display: flex; flex-direction: column; overflow-y: auto; }
-
-        /* UI Elements */
-        h1 { font-size: 2.5rem; font-weight: 900; text-transform: uppercase; margin-bottom: 2rem; letter-spacing: -0.05em; }
-        input { border: none; border-bottom: 2px solid #000; padding: 10px; font-size: 1.5rem; width: 250px; text-align: center; outline: none; margin-bottom: 2rem; text-transform: uppercase; background: transparent; }
-        .btn { background: #000; color: #fff; border: 1px solid #000; padding: 15px 40px; font-weight: bold; cursor: pointer; text-transform: uppercase; font-size: 0.8rem; transition: all 0.2s; }
-        .btn:hover { background: #fff; color: #000; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        /* Board */
-        #board { display: grid; grid-template-columns: repeat(3, 100px); gap: 0; border: 2px solid #000; margin-top: 20px; }
-        .cell { width: 100px; height: 100px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 3rem; font-weight: 900; cursor: pointer; transition: background 0.2s; }
-        .cell:hover:not(.disabled) { background: #f5f5f5; }
-        .cell.disabled { cursor: not-allowed; opacity: 0.7; }
-
-        .hidden { display: none !important; }
-        .label { font-size: 0.7rem; font-weight: bold; color: #aaa; margin-bottom: 10px; text-transform: uppercase; }
-        ul { list-style: none; }
-        li { padding: 5px 0; font-size: 0.9rem; font-weight: 600; text-transform: uppercase; }
-        li.me { color: #0066cc; }
-        li.searching { color: #ff6600; }
-        li.playing { color: #00aa00; }
-
-        .error { color: red; font-size: 0.8rem; margin-top: 10px; }
-
-        @media (max-width: 800px) {
-            .app { flex-direction: column; }
-            .sidebar { width: 100%; height: 150px; border-left: none; border-top: 1px solid #000; order: 2; padding: 20px; }
-            .main { order: 1; flex: 1; }
+        :root {
+            --bg-body: #f8fafc; --bg-card: #ffffff; --text-main: #0f172a;
+            --text-sub: #64748b; --btc-orange: #F7931A; --border: #e2e8f0;
         }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-body); font-family: 'Inter', sans-serif;
+            height: 100vh; display: flex; justify-content: center; align-items: center;
+        }
+        .widget-card {
+            background: var(--bg-card); width: 95%; max-width: 1000px;
+            padding: 32px; border-radius: 20px; border: 1px solid var(--border);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        #price-display { font-size: 42px; font-weight: 700; color: var(--btc-orange); font-feature-settings: "tnum"; }
+        .chart-container { position: relative; height: 400px; width: 100%; }
     </style>
 </head>
 <body>
 
-<div class="app">
-    <main class="main">
-        <div id="branding"><h1>TICTACTOE</h1></div>
-
-        <div id="view-login">
-            <input type="text" id="username" placeholder="Dein Name" maxlength="10" autofocus>
-            <br>
-            <button class="btn" onclick="login()">Arena Betreten</button>
-            <p id="error-msg" class="error hidden"></p>
+    <div class="widget-card">
+        <div class="header">
+            <div>
+                <h1 style="font-size: 20px;">Bitcoin Live</h1>
+                <p style="color: var(--text-sub); font-size: 14px;">Global Time-Synced Feed (90s)</p>
+            </div>
+            <div style="text-align: right;">
+                <div id="price-display">Syncing...</div>
+                <p style="color: var(--text-sub); font-size: 12px; font-weight: 600;">BTC / USD</p>
+            </div>
         </div>
-
-        <div id="view-lounge" class="hidden">
-            <p style="font-size: 1.2rem; margin-bottom: 20px; font-weight: 600;">Bereit zu spielen?</p>
-            <button class="btn" id="find-btn" onclick="search()">Gegner Suchen</button>
-            <button class="btn" onclick="cancelSearch()" id="cancel-btn" class="hidden" style="margin-top: 15px; background: #fff; color: #000;">Abbrechen</button>
+        <div class="chart-container">
+            <canvas id="syncChart"></canvas>
         </div>
+    </div>
 
-        <div id="view-game" class="hidden">
-            <p id="game-info" style="font-size: 0.9rem; margin-bottom: 10px; color: #666;"></p>
-            <p id="game-status" style="font-weight: 900; margin-bottom: 15px; text-transform: uppercase; font-size: 1.5rem;"></p>
-            <div id="board"></div>
-            <button class="btn" id="back-btn" onclick="backToLobby()" style="margin-top: 30px; display: none;">Zurück zur Lobby</button>
-        </div>
-    </main>
+    <script>
+        const HISTORY_SECONDS = 90;
+        const CHART_RES = 1000; // 1 Punkt pro Sekunde für die Historie
+        let chart;
+        let targetPrice = 0;
+        let currentVisualPrice = 0;
 
-    <aside class="sidebar">
-        <p class="label">Online Spieler</p>
-        <ul id="user-list"></ul>
-    </aside>
-</div>
+        // 1. Chart Initialisierung
+        const ctx = document.getElementById('syncChart').getContext('2d');
+        const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+        gradient.addColorStop(0, 'rgba(247, 147, 26, 0.15)');
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
 
-<script>
-    // Debug-Funktion
-    function log(msg) {
-        console.log('[TicTacToe]', msg);
-    }
-
-    // Initialisierung
-    log('Starting app...');
-
-    const SUPABASE_URL = 'https://qzkpslpphypnintdnxji.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6a3BzbHBwaHlwbmludGRueGppIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzk0NjU0NTAsImV4cCI6MjA1NTA0MTQ1MH0.qBoKNvhWxQsj0rPLZI8Y7FN-S0VcZAzXPnS-UH9nZkY';
-
-    let sb;
-    try {
-        sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        log('Supabase initialized');
-    } catch (e) {
-        log('Supabase error: ' + e.message);
-        document.getElementById('error-msg').innerText = 'Verbindungsfehler. Bitte Seite neu laden.';
-        document.getElementById('error-msg').classList.remove('hidden');
-    }
-
-    // Generiere bei jedem Laden eine neue ID (kein localStorage)
-    let myId = 'u_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    let myAlias = ""; // KEIN localStorage mehr
-    let lobby, gameChan, mySymbol = '', opponentSymbol = '', isMyTurn = false, board = Array(9).fill(null);
-    let gameActive = false;
-    let opponentAlias = "";
-
-    const params = new URLSearchParams(window.location.search);
-    const activeGameId = params.get('game');
-
-    log('My ID: ' + myId);
-    log('Active Game: ' + activeGameId);
-
-    // Enter-Taste im Input-Feld
-    document.getElementById('username').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            login();
-        }
-    });
-
-    // KEIN Auto-Login mehr! Zeige immer Login-Screen
-    if (activeGameId) {
-        // Falls URL ein Game hat, leite zurück zur Startseite
-        window.location.href = window.location.pathname;
-    }
-
-    async function login() {
-        const input = document.getElementById('username').value.trim();
-        myAlias = input.toUpperCase();
-
-        if (!myAlias || myAlias.length < 2) {
-            document.getElementById('error-msg').innerText = 'Bitte gib einen Namen ein (mind. 2 Zeichen)';
-            document.getElementById('error-msg').classList.remove('hidden');
-            return;
-        }
-
-        log('Login as: ' + myAlias);
-
-        document.getElementById('view-login').classList.add('hidden');
-        document.getElementById('error-msg').classList.add('hidden');
-
-        try {
-            lobby = sb.channel('lobby', { 
-                config: { 
-                    presence: { key: myId },
-                    broadcast: { self: true }
-                } 
-            });
-
-            lobby.on('presence', { event: 'sync' }, () => {
-                log('Presence sync');
-                updateUserList();
-            }).on('broadcast', { event: 'match' }, async (payload) => {
-                log('Match broadcast received');
-                const data = payload.payload;
-                if (data.p1 === myId || data.p2 === myId) {
-                    await lobby.track({ alias: myAlias, id: myId, status: 'playing' });
-                    window.location.search = `?game=${data.gameId}`;
-                }
-            }).subscribe(async (status) => {
-                log('Lobby status: ' + status);
-                if (status === 'SUBSCRIBED') {
-                    await lobby.track({ 
-                        alias: myAlias, 
-                        id: myId, 
-                        status: activeGameId ? 'playing' : 'idle',
-                        timestamp: Date.now()
-                    });
-
-                    if (activeGameId) {
-                        initGame(activeGameId);
-                    } else {
-                        document.getElementById('view-lounge').classList.remove('hidden');
-                    }
+        function initChart() {
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [{
+                        data: [],
+                        borderColor: '#F7931A',
+                        borderWidth: 2.5,
+                        backgroundColor: gradient,
+                        fill: true,
+                        pointRadius: 0,
+                        tension: 0.4,
+                        cubicInterpolationMode: 'monotone'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: { unit: 'second', displayFormats: { second: 'HH:mm:ss' } },
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { size: 10 } }
+                        },
+                        y: {
+                            position: 'right',
+                            grid: { color: '#f1f5f9', borderDash: [5, 5] },
+                            ticks: { color: '#94a3b8', font: { size: 11 } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
                 }
             });
-        } catch (e) {
-            log('Login error: ' + e.message);
-            alert('Verbindungsfehler. Bitte Seite neu laden.');
-        }
-    }
-
-    function updateUserList() {
-        const state = lobby.presenceState();
-        const list = document.getElementById('user-list');
-        list.innerHTML = '';
-        const all = Object.values(state).flat();
-
-        log('Online users: ' + all.length);
-
-        all.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-
-        all.forEach(u => {
-            const li = document.createElement('li');
-            let displayText = u.alias || 'Anonymous';
-
-            if (u.id === myId) {
-                li.className = 'me';
-                displayText += ' (DU)';
-            }
-
-            if (u.status === 'searching') {
-                displayText += ' 🔍';
-                if (!li.className) li.className = '';
-                li.className += ' searching';
-            } else if (u.status === 'playing') {
-                displayText += ' 🎮';
-                if (!li.className) li.className = '';
-                li.className += ' playing';
-            }
-
-            li.innerText = displayText;
-            list.appendChild(li);
-        });
-
-        if (!activeGameId && !gameActive) {
-            checkMatch(all);
-        }
-    }
-
-    async function search() {
-        log('Starting search...');
-        document.getElementById('find-btn').classList.add('hidden');
-        document.getElementById('cancel-btn').classList.remove('hidden');
-        await lobby.track({ alias: myAlias, id: myId, status: 'searching', timestamp: Date.now() });
-    }
-
-    async function cancelSearch() {
-        log('Cancel search');
-        document.getElementById('find-btn').classList.remove('hidden');
-        document.getElementById('cancel-btn').classList.add('hidden');
-        await lobby.track({ alias: myAlias, id: myId, status: 'idle', timestamp: Date.now() });
-    }
-
-    function checkMatch(users) {
-        const searchers = users.filter(u => u.status === 'searching' && u.id);
-
-        if (searchers.length >= 2) {
-            log('Match found! Searchers: ' + searchers.length);
-            const sorted = searchers.sort((a, b) => a.id.localeCompare(b.id));
-            const p1 = sorted[0];
-            const p2 = sorted[1];
-
-            if (myId === p1.id || myId === p2.id) {
-                const gameId = 'g_' + p1.id + '_' + p2.id + '_' + Date.now();
-                log('Creating game: ' + gameId);
-                lobby.send({
-                    type: 'broadcast',
-                    event: 'match',
-                    payload: { gameId, p1: p1.id, p2: p2.id }
-                });
-            }
-        }
-    }
-
-    async function initGame(gid) {
-        log('Init game: ' + gid);
-        gameActive = true;
-        document.getElementById('view-lounge').classList.add('hidden');
-        document.getElementById('view-game').classList.remove('hidden');
-
-        const parts = gid.split('_');
-        const p1Id = parts[1];
-        const p2Id = parts[2];
-
-        log('P1: ' + p1Id + ', P2: ' + p2Id + ', Me: ' + myId);
-
-        if (myId === p1Id) {
-            mySymbol = 'X';
-            opponentSymbol = 'O';
-            isMyTurn = true;
-        } else {
-            mySymbol = 'O';
-            opponentSymbol = 'X';
-            isMyTurn = false;
         }
 
-        log('My symbol: ' + mySymbol + ', My turn: ' + isMyTurn);
+        // 2. Globaler Sync: Historie von Binance laden
+        async function syncGlobalMarket() {
+            try {
+                // Wir laden die 1-Minuten-Klines (Kerzen)
+                const res = await fetch('https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=2');
+                const klines = await res.json();
+                
+                const openPrice = parseFloat(klines[1][1]);
+                const closePrice = parseFloat(klines[1][4]);
+                const startTime = klines[1][0];
+                
+                targetPrice = closePrice;
+                currentVisualPrice = closePrice;
 
-        board = Array(9).fill(null);
-
-        gameChan = sb.channel(gid, {
-            config: {
-                broadcast: { self: false },
-                presence: { key: myId }
-            }
-        });
-
-        gameChan.on('broadcast', { event: 'move' }, (payload) => {
-            log('Move received');
-            const data = payload.payload;
-            if (data.player !== myId && board[data.index] === null) {
-                board[data.index] = data.symbol;
-                isMyTurn = true;
-                drawBoard();
-                updateStatus();
-            }
-        }).on('presence', { event: 'sync' }, () => {
-            const state = gameChan.presenceState();
-            const players = Object.values(state).flat();
-            const opponent = players.find(p => p.id !== myId);
-            if (opponent) {
-                opponentAlias = opponent.alias;
-                log('Opponent: ' + opponentAlias);
-                updateStatus();
-            }
-        }).subscribe(async (status) => {
-            log('Game channel status: ' + status);
-            if (status === 'SUBSCRIBED') {
-                await gameChan.track({ id: myId, alias: myAlias });
-                drawBoard();
-                updateStatus();
-            }
-        });
-    }
-
-    function drawBoard() {
-        const boardEl = document.getElementById('board');
-        boardEl.innerHTML = '';
-
-        board.forEach((cell, index) => {
-            const cellEl = document.createElement('div');
-            cellEl.className = 'cell';
-
-            if (cell) {
-                cellEl.innerText = cell;
-                cellEl.classList.add('disabled');
-            } else if (!isMyTurn || checkWin(true)) {
-                cellEl.classList.add('disabled');
-            }
-
-            cellEl.onclick = () => makeMove(index);
-            boardEl.appendChild(cellEl);
-        });
-
-        checkWin();
-    }
-
-    function makeMove(index) {
-        if (!isMyTurn || board[index] !== null || checkWin(true) || !gameActive) {
-            log('Move blocked - Turn: ' + isMyTurn + ', Cell: ' + board[index] + ', Active: ' + gameActive);
-            return;
-        }
-
-        log('Making move at ' + index);
-        board[index] = mySymbol;
-        isMyTurn = false;
-
-        gameChan.send({
-            type: 'broadcast',
-            event: 'move',
-            payload: { index, symbol: mySymbol, player: myId }
-        });
-
-        drawBoard();
-        updateStatus();
-    }
-
-    function updateStatus() {
-        const statusEl = document.getElementById('game-status');
-        const infoEl = document.getElementById('game-info');
-
-        infoEl.innerText = `Du: ${mySymbol} | Gegner: ${opponentAlias || 'Wartet...'}`;
-
-        if (!checkWin(true)) {
-            statusEl.innerText = isMyTurn ? "Dein Zug" : "Gegner am Zug";
-            statusEl.style.color = isMyTurn ? '#00aa00' : '#ff6600';
-        }
-    }
-
-    function checkWin(silent = false) {
-        const wins = [
-            [0,1,2], [3,4,5], [6,7,8],
-            [0,3,6], [1,4,7], [2,5,8],
-            [0,4,8], [2,4,6]
-        ];
-
-        for (let combo of wins) {
-            if (board[combo[0]] && 
-                board[combo[0]] === board[combo[1]] && 
-                board[combo[0]] === board[combo[2]]) {
-
-                if (!silent) {
-                    const winner = board[combo[0]];
-                    const statusEl = document.getElementById('game-status');
-
-                    if (winner === mySymbol) {
-                        statusEl.innerText = "🎉 SIEG!";
-                        statusEl.style.color = '#00aa00';
-                    } else {
-                        statusEl.innerText = "NIEDERLAGE";
-                        statusEl.style.color = '#cc0000';
-                    }
-
-                    document.getElementById('back-btn').style.display = 'block';
-                    gameActive = false;
-                    log('Game ended - Winner: ' + winner);
+                // Wir füllen die letzten 90 Sekunden basierend auf der aktuellen Zeit
+                const now = Date.now();
+                const historyData = [];
+                for (let i = HISTORY_SECONDS; i >= 0; i--) {
+                    const ts = now - (i * 1000);
+                    // Wir füllen die Historie mit dem Durchschnittspreis (da wir keine Ticks für 90s rückwirkend haben ohne API Key)
+                    historyData.push({ x: ts, y: closePrice });
                 }
-                return true;
+                
+                chart.data.datasets[0].data = historyData;
+                chart.update();
+            } catch (e) { console.error("Sync Error", e); }
+        }
+
+        // 3. Live Preis Update
+        async function fetchLive() {
+            try {
+                const res = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+                const data = await res.json();
+                targetPrice = parseFloat(data.price);
+            } catch (e) {}
+            setTimeout(fetchLive, 2000);
+        }
+
+        // 4. Smooth Animation Loop
+        function animate() {
+            if (currentVisualPrice === 0) { requestAnimationFrame(animate); return; }
+
+            // Smooth Interpolation
+            currentVisualPrice += (targetPrice - currentVisualPrice) * 0.05;
+            
+            const now = Date.now();
+            const newDataPoint = { x: now, y: currentVisualPrice };
+
+            // Datenpunkt hinzufügen
+            chart.data.datasets[0].data.push(newDataPoint);
+
+            // Fenster auf 90 Sekunden halten
+            const cutoff = now - (HISTORY_SECONDS * 1000);
+            while (chart.data.datasets[0].data.length > 0 && chart.data.datasets[0].data[0].x < cutoff) {
+                chart.data.datasets[0].data.shift();
             }
+
+            // Achsen-Verschiebung
+            chart.options.scales.x.min = cutoff;
+            chart.options.scales.x.max = now;
+
+            document.getElementById('price-display').innerText = '$ ' + currentVisualPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            
+            chart.update('none');
+            requestAnimationFrame(animate);
         }
 
-        if (!board.includes(null)) {
-            if (!silent) {
-                document.getElementById('game-status').innerText = "UNENTSCHIEDEN";
-                document.getElementById('game-status').style.color = '#666';
-                document.getElementById('back-btn').style.display = 'block';
-                gameActive = false;
-                log('Game ended - Draw');
-            }
-            return true;
-        }
-
-        return false;
-    }
-
-    async function backToLobby() {
-        log('Back to lobby - reloading page');
-        if (gameChan) {
-            await gameChan.unsubscribe();
-        }
-        if (lobby) {
-            await lobby.untrack();
-        }
-
-        // Seite komplett neu laden (ohne Cache)
-        window.location.href = window.location.pathname;
-    }
-
-    window.addEventListener('beforeunload', () => {
-        if (lobby) {
-            lobby.untrack();
-        }
-        if (gameChan) {
-            gameChan.untrack();
-        }
-    });
-
-    log('Script loaded successfully');
-</script>
+        // Start
+        initChart();
+        syncGlobalMarket().then(() => {
+            fetchLive();
+            animate();
+        });
+    </script>
 </body>
 </html>
